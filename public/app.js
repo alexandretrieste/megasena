@@ -14,7 +14,14 @@ const minFontSize = 75;
 const maxFontSize = 150;
 
 function updateFontSize(size) {
-  currentFontSize = Math.max(minFontSize, Math.min(maxFontSize, size));
+  // Clamp to min/max
+  let target = Math.max(minFontSize, Math.min(maxFontSize, size));
+
+  // If crossing 100% from below or above, snap to 100% instead of jumping over
+  if (currentFontSize < 100 && target > 100) target = 100;
+  if (currentFontSize > 100 && target < 100) target = 100;
+
+  currentFontSize = target;
   document.body.style.fontSize = (currentFontSize / 100) * 16 + 'px';
   document.getElementById('font-size-display').textContent = currentFontSize + '%';
   localStorage.setItem('megasena-font-size', currentFontSize);
@@ -49,32 +56,34 @@ function loadHighContrastPreference() {
   }
 }
 
-document.getElementById('decrease-font')?.addEventListener('click', () => {
-  updateFontSize(currentFontSize - 10);
-});
+const FONT_STEP = 10;
 
-document.getElementById('increase-font')?.addEventListener('click', () => {
-  updateFontSize(currentFontSize + 10);
-});
+function attachAccessibilityListeners() {
+  if (window._megasenaAccessibilityInitialized) return;
+  window._megasenaAccessibilityInitialized = true;
 
-document.getElementById('high-contrast-toggle')?.addEventListener('click', toggleHighContrast);
+  const decBtn = document.getElementById('decrease-font');
+  const incBtn = document.getElementById('increase-font');
+  const hcBtn = document.getElementById('high-contrast-toggle');
+
+  decBtn?.addEventListener('click', () => {
+    updateFontSize(currentFontSize - FONT_STEP);
+  });
+
+  incBtn?.addEventListener('click', () => {
+    updateFontSize(currentFontSize + FONT_STEP);
+  });
+
+  hcBtn?.addEventListener('click', toggleHighContrast);
+}
 
 loadSavedFontSize();
 loadHighContrastPreference();
 
-// Inicializar após o DOM estar pronto
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('decrease-font')?.addEventListener('click', () => {
-      updateFontSize(currentFontSize - 10);
-    });
-
-    document.getElementById('increase-font')?.addEventListener('click', () => {
-      updateFontSize(currentFontSize + 10);
-    });
-
-    document.getElementById('high-contrast-toggle')?.addEventListener('click', toggleHighContrast);
-  });
+  document.addEventListener('DOMContentLoaded', attachAccessibilityListeners);
+} else {
+  attachAccessibilityListeners();
 }
 
 function renderGrid() {

@@ -263,6 +263,42 @@ td {
   border: 1px solid #007bff;
 }
 
+/* Back button used in login/admin pages */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0d3b66;
+  background: transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.back-button:hover {
+  background: rgba(13, 59, 102, 0.05);
+}
+
+/* Small gear link for home header */
+.gear-link {
+  font-size: 20px;
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.gear-link:hover {
+  background: rgba(13, 59, 102, 0.05);
+  transform: translateY(-1px);
+}
+
 /* Modo Alto Contraste */
 body.high-contrast {
   background: #000;
