@@ -8,9 +8,9 @@
 
 ## Passo 2: Encontrar SUPABASE_URL
 
-1. No menu lateral esquerdo, clique em **Settings** (ícone de engrenagem)
-2. Clique em **API**
-3. Em **Project URL**, você verá a URL do seu projeto
+1. No menu lateral esquerdo, procure por **API Keys** (conforme a imagem que você mostrou)
+2. Clique em **API Keys**
+3. Na página que abrir, você verá **Project URL** no topo
 4. Copie e cole em `SUPABASE_URL`
 
 **Exemplo:**
@@ -20,14 +20,14 @@ https://seu-projeto.supabase.co
 
 ## Passo 3: Encontrar SUPABASE_ANON_KEY
 
-1. Na mesma página de **Settings > API**
+1. Na mesma página de **API Keys**
 2. Procure pela seção **Project API keys**
-3. Você verá 3 chaves:
+3. Você verá as chaves listadas:
    - **`public`** (anon) ← **ESTA É A QUE VOCÊ PRECISA**
    - `service_role`
    - `jwt_secret`
 
-4. Clique em **`public`** e copie a chave
+4. Clique no ícone de cópia ao lado de **`public`** para copiar a chave
 
 **Exemplo:**
 ```
@@ -52,16 +52,33 @@ NODE_ENV=development
 - NUNCA compartilhe a chave **`service_role`** - ela é para o backend apenas
 - Se comprometer a chave, regenere-a clicando no ícone de refresh
 
-## 📱 Screenshot (Localização no Supabase)
+## 📱 Localização no Supabase
+
+Conforme a imagem que você mostrou, o menu lateral tem:
 
 ```
-Supabase Console
-├── Settings (engrenagem no menu lateral)
-│   └── API
-│       ├── Project URL ← SUPABASE_URL
-│       └── Project API keys
-│           └── public ← SUPABASE_ANON_KEY (copie esta)
+Supabase Settings
+├── General
+├── Compute and Disk
+├── Infrastructure
+├── Integrations
+├── Data API
+├── API Keys ← CLIQUE AQUI
+├── JWT Keys
+├── Log Drains
+├── Add Ons
+├── Vault (BETA)
+├── Database
+├── Authentication
+├── Storage
+├── Edge Functions
+├── Subscription
+└── Usage
 ```
+
+**Na página API Keys, você encontra:**
+- **Project URL** ← `SUPABASE_URL`
+- **Project API keys > public** ← `SUPABASE_ANON_KEY`
 
 ## 🆘 Troubleshooting
 
