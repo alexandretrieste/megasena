@@ -4,11 +4,38 @@ const form = document.getElementById('volante-form');
 const grid = document.getElementById('numbers-grid');
 const selectionHint = document.getElementById('selection-hint');
 const feedback = document.getElementById('feedback');
-const statsSummary = document.getElementById('stats-summary');
-const statsBody = document.getElementById('stats-body');
 const cpfInput = document.getElementById('cpf');
 
 const selectedNumbers = new Set();
+
+// Acessibilidade - Controle de tamanho de fonte
+let currentFontSize = 100;
+const minFontSize = 75;
+const maxFontSize = 150;
+
+function updateFontSize(size) {
+  currentFontSize = Math.max(minFontSize, Math.min(maxFontSize, size));
+  document.body.style.fontSize = (currentFontSize / 100) * 16 + 'px';
+  document.getElementById('font-size-display').textContent = currentFontSize + '%';
+  localStorage.setItem('megasena-font-size', currentFontSize);
+}
+
+function loadSavedFontSize() {
+  const saved = localStorage.getItem('megasena-font-size');
+  if (saved) {
+    updateFontSize(parseInt(saved));
+  }
+}
+
+document.getElementById('decrease-font')?.addEventListener('click', () => {
+  updateFontSize(currentFontSize - 10);
+});
+
+document.getElementById('increase-font')?.addEventListener('click', () => {
+  updateFontSize(currentFontSize + 10);
+});
+
+loadSavedFontSize();
 
 function renderGrid() {
   for (let n = 1; n <= 60; n += 1) {
@@ -45,6 +72,22 @@ function updateSelectionHint() {
 function showFeedback(message, isError = false) {
   feedback.textContent = message;
   feedback.className = isError ? 'error' : 'success';
+}
+
+function showSuccessPopup(message) {
+  const popup = document.createElement('div');
+  popup.className = 'success-popup';
+  popup.textContent = message;
+  document.body.appendChild(popup);
+  
+  setTimeout(() => {
+    popup.classList.add('show');
+  }, 10);
+  
+  setTimeout(() => {
+    popup.classList.remove('show');
+    setTimeout(() => popup.remove(), 300);
+  }, 3000);
 }
 
 function resetSelection() {
@@ -120,10 +163,9 @@ async function submitVolante(event) {
       data = { message: text };
     }
 
-    showFeedback(data.message || 'Volante registrado!', false);
+    showSuccessPopup('✅ Volante registrado com sucesso!');
     form.reset();
     resetSelection();
-    await loadStats();
   } catch (error) {
     showFeedback(error.message, true);
   } finally {
@@ -131,44 +173,8 @@ async function submitVolante(event) {
   }
 }
 
-async function loadStats() {
-  try {
-    const response = await fetch('/api/stats/top-numbers');
-    const contentType = response.headers.get('content-type') || '';
-
-    let data = null;
-    if (contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      throw new Error(text || 'Falha ao carregar estatísticas.');
-    }
-    const { totalVolantes, topNumbers } = data;
-
-    statsSummary.textContent = totalVolantes
-      ? `${totalVolantes} volante(s) registrado(s).`
-      : 'Nenhum volante registrado ainda.';
-
-    statsBody.innerHTML = '';
-    if (!topNumbers || !topNumbers.length) {
-      statsBody.innerHTML = '<tr><td colspan="2">Sem dados suficientes.</td></tr>';
-      return;
-    }
-
-    topNumbers.forEach(({ number, count }) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `<td>${number.toString().padStart(2, '0')}</td><td>${count}</td>`;
-      statsBody.appendChild(row);
-    });
-  } catch (error) {
-    statsSummary.textContent = 'Erro ao carregar estatísticas.';
-    console.error(error);
-  }
-}
-
 renderGrid();
 updateSelectionHint();
 form.addEventListener('submit', submitVolante);
 cpfInput.addEventListener('input', handleCpfInput);
-loadStats();
 

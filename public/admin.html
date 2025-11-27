@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Administrativo - Mega Sena</title>
+    <link rel="icon" type="image/png" href="/celebracao.png" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #ddd;
+      }
+
+      .tab-button {
+        padding: 12px 20px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+      }
+
+      .tab-button.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+      }
+
+      .tab-button:hover {
+        color: #007bff;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #007bff;
+      }
+
+      .stat-number {
+        font-size: 28px;
+        font-weight: bold;
+        color: #007bff;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+        text-transform: uppercase;
+      }
+
+      .jogos-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .jogo-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border: 2px solid #007bff;
+      }
+
+      .jogo-title {
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #007bff;
+        font-size: 16px;
+      }
+
+      .numeros-jogo {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+
+      .numero-badge {
+        background: #007bff;
+        color: white;
+        padding: 8px;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #0056b3;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #545b62;
+      }
+
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #218838;
+      }
+
+      .table-container {
+        overflow-x: auto;
+        margin-top: 20px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+      }
+
+      thead {
+        background: #f8f9fa;
+      }
+
+      th {
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #ddd;
+      }
+
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+      }
+
+      tr:hover {
+        background: #f8f9fa;
+      }
+
+      .copy-btn {
+        background: #6c757d;
+        color: white;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .copy-btn:hover {
+        background: #545b62;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+
+      .success {
+        background: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+
+      /* Responsividade */
+      @media (max-width: 768px) {
+        .admin-container {
+          padding: 10px;
+        }
+
+        .tabs {
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+
+        .tab-button {
+          padding: 10px 15px;
+          font-size: 14px;
+        }
+
+        .jogos-container {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        }
+
+        .numeros-jogo {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+        }
+
+        .numero-badge {
+          padding: 6px;
+          font-size: 12px;
+        }
+
+        .btn-group {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+        }
+
+        th, td {
+          padding: 8px;
+          font-size: 13px;
+        }
+
+        .copy-btn {
+          padding: 4px 8px;
+          font-size: 11px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .admin-container {
+          padding: 5px;
+        }
+
+        .card {
+          padding: 1rem;
+        }
+
+        h1 {
+          font-size: 20px;
+        }
+
+        .tab-button {
+          padding: 8px 12px;
+          font-size: 12px;
+        }
+
+        .jogo-card {
+          padding: 15px;
+        }
+
+        .jogo-title {
+          font-size: 14px;
+        }
+
+        .numeros-jogo {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 5px;
+        }
+
+        .numero-badge {
+          padding: 5px;
+          font-size: 11px;
+        }
+
+        .stat-number {
+          font-size: 22px;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        th, td {
+          padding: 6px;
+          font-size: 12px;
+        }
+
+        .copy-btn {
+          padding: 3px 6px;
+          font-size: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="accessibility-controls">
+      <button id="decrease-font" aria-label="Diminuir tamanho da fonte" title="Diminuir fonte">A-</button>
+      <span id="font-size-display">100%</span>
+      <button id="increase-font" aria-label="Aumentar tamanho da fonte" title="Aumentar fonte">A+</button>
+    </div>
+    <main>
+      <section class="card">
+        <h1>🎰 Painel Administrativo - Mega Sena</h1>
+
+        <div class="admin-container">
+          <!-- Abas -->
+          <div class="tabs">
+            <button class="tab-button active" onclick="showTab('jogos')">
+              Gerar Jogos
+            </button>
+            <button class="tab-button" onclick="showTab('estatisticas')">
+              Estatísticas
+            </button>
+            <button class="tab-button" onclick="showTab('participantes')">
+              Participantes
+            </button>
+          </div>
+
+          <!-- Aba: Gerar Jogos -->
+          <div id="jogos" class="tab-content active">
+            <div class="btn-group">
+              <button class="btn btn-success" onclick="gerarJogos()">
+                Gerar 7 Jogos com Top 10
+              </button>
+              <button class="btn btn-secondary" onclick="limparJogos()">
+                Limpar
+              </button>
+            </div>
+
+            <div id="jogos-resultado"></div>
+          </div>
+
+          <!-- Aba: Estatísticas -->
+          <div id="estatisticas" class="tab-content">
+            <div class="stats-grid" id="stats-container"></div>
+            <h3>Top 10 Números Sugeridos</h3>
+            <div class="stats-grid" id="top-numeros"></div>
+          </div>
+
+          <!-- Aba: Participantes -->
+          <div id="participantes" class="tab-content">
+            <h3>Lista de Participantes</h3>
+            <div class="table-container">
+              <table id="participantes-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Números</th>
+                    <th>Data</th>
+                  </tr>
+                </thead>
+                <tbody id="participantes-tbody">
+                  <tr>
+                    <td colspan="5" class="loading">Carregando...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Acessibilidade - Controle de tamanho de fonte
+      let currentFontSize = 100;
+      const minFontSize = 75;
+      const maxFontSize = 150;
+
+      function updateFontSize(size) {
+        currentFontSize = Math.max(minFontSize, Math.min(maxFontSize, size));
+        document.body.style.fontSize = (currentFontSize / 100) * 16 + 'px';
+        document.getElementById('font-size-display').textContent = currentFontSize + '%';
+        localStorage.setItem('megasena-font-size', currentFontSize);
+      }
+
+      function loadSavedFontSize() {
+        const saved = localStorage.getItem('megasena-font-size');
+        if (saved) {
+          updateFontSize(parseInt(saved));
+        }
+      }
+
+      document.getElementById('decrease-font')?.addEventListener('click', () => {
+        updateFontSize(currentFontSize - 10);
+      });
+
+      document.getElementById('increase-font')?.addEventListener('click', () => {
+        updateFontSize(currentFontSize + 10);
+      });
+
+      loadSavedFontSize();
+
+      // Alternar abas
+      function showTab(tabName) {
+        // Esconder todos os conteúdos
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach((content) => {
+          content.classList.remove('active');
+        });
+
+        // Remover classe active de todos os botões
+        const buttons = document.querySelectorAll('.tab-button');
+        buttons.forEach((btn) => {
+          btn.classList.remove('active');
+        });
+
+        // Mostrar tab selecionada
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+
+        // Carregar dados
+        if (tabName === 'estatisticas') {
+          carregarEstatisticas();
+        } else if (tabName === 'participantes') {
+          carregarParticipantes();
+        }
+      }
+
+      // Carregar estatísticas
+      async function carregarEstatisticas() {
+        try {
+          const response = await fetch('/api/stats/top-numbers');
+          const data = await response.json();
+
+          if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+
+          // Mostrar stats
+          const statsContainer = document.getElementById('stats-container');
+          statsContainer.innerHTML = `
+            <div class="stat-card">
+              <div class="stat-number">${data.totalVolantes}</div>
+              <div class="stat-label">Total de Volantes</div>
+            </div>
+          `;
+
+          // Mostrar top números
+          const topNumerosContainer = document.getElementById('top-numeros');
+          topNumerosContainer.innerHTML = data.topNumbers
+            .map(
+              (num) => `
+            <div class="stat-card">
+              <div class="stat-number">${num.number}</div>
+              <div class="stat-label">${num.count} vezes</div>
+            </div>
+          `
+            )
+            .join('');
+        } catch (error) {
+          console.error('Erro:', error);
+          document.getElementById('stats-container').innerHTML = `
+            <div class="error">Erro ao carregar estatísticas</div>
+          `;
+        }
+      }
+
+      // Carregar participantes
+      async function carregarParticipantes() {
+        try {
+          const response = await fetch('/api/stats/top-numbers');
+          const data = await response.json();
+
+          // Aqui você precisará de um endpoint específico para listar participantes
+          // Por enquanto, vou criar uma chamada mock
+          const tbody = document.getElementById('participantes-tbody');
+
+          // Vou assumir que você vai criar um endpoint /api/volantes/list
+          try {
+            const volantesResponse = await fetch('/api/volantes/list');
+            if (volantesResponse.ok) {
+              const volantes = await volantesResponse.json();
+              tbody.innerHTML = volantes
+                .map(
+                  (v, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${v.name}</td>
+                  <td>${v.cpf}</td>
+                  <td>${v.numbers.join(', ')}</td>
+                  <td>${new Date(v.timestamp).toLocaleDateString('pt-BR')}</td>
+                </tr>
+              `
+                )
+                .join('');
+            } else {
+              // Fallback: mostrar mensagem
+              tbody.innerHTML = `
+                <tr>
+                  <td colspan="5" class="error">Endpoint /api/volantes/list não disponível. Configure no servidor.</td>
+                </tr>
+              `;
+            }
+          } catch (error) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" class="error">Erro ao carregar participantes</td>
+              </tr>
+            `;
+          }
+        } catch (error) {
+          console.error('Erro:', error);
+        }
+      }
+
+      // Gerar 7 jogos com top 10 números
+      async function gerarJogos() {
+        try {
+          const response = await fetch('/api/stats/top-numbers');
+          const data = await response.json();
+
+          if (!response.ok) throw new Error('Erro ao carregar dados');
+
+          // Extrair top 10 números
+          const topNumeros = data.topNumbers.slice(0, 10).map((n) => n.number);
+
+          if (topNumeros.length < 6) {
+            document.getElementById('jogos-resultado').innerHTML = `
+              <div class="error">Não há números suficientes para gerar jogos. Mínimo 6 números necessários.</div>
+            `;
+            return;
+          }
+
+          // Gerar 7 combinações diferentes de 10 números
+          const jogos = gerarCombinacoes(topNumeros, 7);
+
+          // Mostrar resultados
+          const resultado = document.getElementById('jogos-resultado');
+          resultado.innerHTML = jogos
+            .map(
+              (jogo, i) => `
+            <div class="jogo-card">
+              <div class="jogo-title">🎲 Jogo ${i + 1}</div>
+              <div class="numeros-jogo">
+                ${jogo.map((num) => `<div class="numero-badge">${num}</div>`).join('')}
+              </div>
+              <button class="copy-btn" onclick="copiarNumeros([${jogo}])">
+                Copiar Números
+              </button>
+            </div>
+          `
+            )
+            .join('');
+
+          // Adicionar botão de exportação
+          resultado.innerHTML += `
+            <button class="btn btn-primary" onclick="exportarJogos()">
+              Exportar como CSV
+            </button>
+          `;
+
+          // Armazenar jogos no localStorage para exportação
+          window.jogosGerados = jogos;
+        } catch (error) {
+          console.error('Erro:', error);
+          document.getElementById('jogos-resultado').innerHTML = `
+            <div class="error">Erro ao gerar jogos: ${error.message}</div>
+          `;
+        }
+      }
+
+      // Gerar combinações aleatórias
+      function gerarCombinacoes(numeros, quantidade) {
+        const jogos = [];
+
+        for (let i = 0; i < quantidade; i++) {
+          // Embaralhar números
+          const embaralhado = [...numeros].sort(() => Math.random() - 0.5);
+          // Pegar 10 números (ou todos se menos de 10)
+          const jogo = embaralhado.slice(0, 10).sort((a, b) => a - b);
+          jogos.push(jogo);
+        }
+
+        return jogos;
+      }
+
+      // Copiar números para clipboard
+      function copiarNumeros(jogo) {
+        const texto = jogo[0].join(', ');
+        navigator.clipboard.writeText(texto).then(() => {
+          alert('Números copiados: ' + texto);
+        });
+      }
+
+      // Exportar jogos como CSV
+      function exportarJogos() {
+        if (!window.jogosGerados) return;
+
+        let csv = 'Jogo,Números\n';
+        window.jogosGerados.forEach((jogo, i) => {
+          csv += `Jogo ${i + 1},"${jogo.join(', ')}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jogos-megasena-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+      }
+
+      // Limpar jogos
+      function limparJogos() {
+        document.getElementById('jogos-resultado').innerHTML = '';
+        window.jogosGerados = null;
+      }
+
+      // Carregar estatísticas ao abrir a página
+      window.addEventListener('load', () => {
+        carregarEstatisticas();
+      });
+    </script>
+  </body>
+</html>

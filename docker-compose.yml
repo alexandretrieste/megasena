@@ -25,13 +25,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
       # Usar conexão direta ao PostgreSQL dentro do Docker
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/megasena
-      SUPABASE_URL: postgresql://postgres:postgres@postgres:5432/megasena
-      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4YW1wbGUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNTIwNjQwMCwiZXhwIjoyMzI1NDI2MDAwfQ.v8swpWWrapwHNoGVzyngI8Go3b1D86nSrKvrAKPO9BE
-      PORT: 3000
-      NODE_ENV: development
     ports:
       - "3000:3000"
     volumes:

@@ -31,6 +31,17 @@ app.get('/api/stats/top-numbers', async (_req, res) => {
   }
 });
 
+app.get('/api/volantes/list', async (_req, res) => {
+  try {
+    const { fetchEntries } = require('./lib/sheet');
+    const volantes = await fetchEntries();
+    res.json(volantes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao listar volantes.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
