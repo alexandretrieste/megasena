@@ -1,0 +1,135 @@
+:root {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #0d3b66;
+  background: #f2f6fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  gap: 2rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(13, 59, 102, 0.1);
+  padding: 2rem;
+}
+
+h1,
+h2 {
+  margin-top: 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  color: #16324f;
+}
+
+input {
+  margin-top: 0.35rem;
+  padding: 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #d4dcec;
+  font-size: 1rem;
+}
+
+#numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 0.4rem;
+}
+
+.number {
+  border: 1px solid #d0dae8;
+  border-radius: 50%;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+  font-weight: 600;
+  color: #0d3b66;
+}
+
+.number.selected {
+  background: #1abc9c;
+  border-color: #0d8b74;
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(26, 188, 156, 0.3);
+}
+
+button {
+  border: none;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  background: linear-gradient(120deg, #0d8b74, #1abc9c);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th,
+td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #e6ecf5;
+  text-align: left;
+}
+
+#feedback {
+  min-height: 1.5em;
+  font-weight: 600;
+}
+
+#feedback.error {
+  color: #d7263d;
+}
+
+#feedback.success {
+  color: #1abc9c;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 1rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+}
+

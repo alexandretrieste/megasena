@@ -1,0 +1,25 @@
+{
+  "name": "megasena",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexandretrieste/megasena.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alexandretrieste/megasena/issues"
+  },
+  "homepage": "https://github.com/alexandretrieste/megasena#readme",
+  "dependencies": {
+    "cpf-cnpj-validator": "^1.0.3",
+    "express": "^5.1.0",
+    "google-spreadsheet": "^5.0.2"
+  }
+}
