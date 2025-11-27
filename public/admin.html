@@ -466,9 +466,21 @@
 
       loadSavedFontSize();
       loadHighContrastPreference();
-      });
 
-      loadSavedFontSize();
+      // Garantir inicialização dos botões após DOM pronto
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          document.getElementById('decrease-font')?.addEventListener('click', () => {
+            updateFontSize(currentFontSize - 10);
+          });
+
+          document.getElementById('increase-font')?.addEventListener('click', () => {
+            updateFontSize(currentFontSize + 10);
+          });
+
+          document.getElementById('high-contrast-toggle')?.addEventListener('click', toggleHighContrast);
+        });
+      }
 
       // Verificação de autenticação com JWT
       async function checkAuthentication() {

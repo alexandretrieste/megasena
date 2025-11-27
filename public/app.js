@@ -62,6 +62,21 @@ document.getElementById('high-contrast-toggle')?.addEventListener('click', toggl
 loadSavedFontSize();
 loadHighContrastPreference();
 
+// Inicializar após o DOM estar pronto
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('decrease-font')?.addEventListener('click', () => {
+      updateFontSize(currentFontSize - 10);
+    });
+
+    document.getElementById('increase-font')?.addEventListener('click', () => {
+      updateFontSize(currentFontSize + 10);
+    });
+
+    document.getElementById('high-contrast-toggle')?.addEventListener('click', toggleHighContrast);
+  });
+}
+
 function renderGrid() {
   for (let n = 1; n <= 60; n += 1) {
     const button = document.createElement('button');
