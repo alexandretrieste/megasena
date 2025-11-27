@@ -104,9 +104,16 @@ async function submitVolante(event) {
       body: JSON.stringify({ name, cpf, numbers }),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      const text = await response.text();
+      throw new Error(text || 'Falha ao registrar volante.');
+    }
+
     if (!response.ok) {
-      throw new Error(data.error || 'Falha ao registrar volante.');
+      throw new Error((data && data.error) || 'Falha ao registrar volante.');
     }
 
     showFeedback(data.message || 'Volante registrado!', false);
@@ -123,7 +130,14 @@ async function submitVolante(event) {
 async function loadStats() {
   try {
     const response = await fetch('/api/stats/top-numbers');
-    const data = await response.json();
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      const text = await response.text();
+      throw new Error(text || 'Falha ao carregar estatísticas.');
+    }
     const { totalVolantes, topNumbers } = data;
 
     statsSummary.textContent = totalVolantes
