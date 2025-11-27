@@ -104,16 +104,20 @@ async function submitVolante(event) {
       body: JSON.stringify({ name, cpf, numbers }),
     });
 
-    let data;
-    try {
-      data = await response.json();
-    } catch (_) {
-      const text = await response.text();
-      throw new Error(text || 'Falha ao registrar volante.');
-    }
+    const contentType = response.headers.get('content-type') || '';
+    let data = null;
 
-    if (!response.ok) {
-      throw new Error((data && data.error) || 'Falha ao registrar volante.');
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+      if (!response.ok) {
+        throw new Error((data && data.error) || 'Falha ao registrar volante.');
+      }
+    } else {
+      const text = await response.text();
+      if (!response.ok) {
+        throw new Error(text || 'Falha ao registrar volante.');
+      }
+      data = { message: text };
     }
 
     showFeedback(data.message || 'Volante registrado!', false);
@@ -130,11 +134,12 @@ async function submitVolante(event) {
 async function loadStats() {
   try {
     const response = await fetch('/api/stats/top-numbers');
+    const contentType = response.headers.get('content-type') || '';
 
-    let data;
-    try {
+    let data = null;
+    if (contentType.includes('application/json')) {
       data = await response.json();
-    } catch (_) {
+    } else {
       const text = await response.text();
       throw new Error(text || 'Falha ao carregar estatísticas.');
     }
