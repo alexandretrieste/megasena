@@ -20,6 +20,6 @@
   "dependencies": {
     "cpf-cnpj-validator": "^1.0.3",
     "express": "^5.1.0",
-    "google-spreadsheet": "3.3.0"
+    "googleapis": "^166.0.0"
   }
 }
