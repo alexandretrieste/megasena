@@ -27,6 +27,28 @@ function loadSavedFontSize() {
   }
 }
 
+// Acessibilidade - Modo Alto Contraste
+function toggleHighContrast() {
+  const isActive = document.body.classList.toggle('high-contrast');
+  localStorage.setItem('megasena-high-contrast', isActive);
+  
+  const btn = document.getElementById('high-contrast-toggle');
+  if (btn) {
+    btn.classList.toggle('active', isActive);
+  }
+}
+
+function loadHighContrastPreference() {
+  const saved = localStorage.getItem('megasena-high-contrast') === 'true';
+  if (saved) {
+    document.body.classList.add('high-contrast');
+    const btn = document.getElementById('high-contrast-toggle');
+    if (btn) {
+      btn.classList.add('active');
+    }
+  }
+}
+
 document.getElementById('decrease-font')?.addEventListener('click', () => {
   updateFontSize(currentFontSize - 10);
 });
@@ -35,7 +57,10 @@ document.getElementById('increase-font')?.addEventListener('click', () => {
   updateFontSize(currentFontSize + 10);
 });
 
+document.getElementById('high-contrast-toggle')?.addEventListener('click', toggleHighContrast);
+
 loadSavedFontSize();
+loadHighContrastPreference();
 
 function renderGrid() {
   for (let n = 1; n <= 60; n += 1) {

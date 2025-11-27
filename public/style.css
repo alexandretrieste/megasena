@@ -174,66 +174,222 @@ td {
 
 .accessibility-controls {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
   background: #fff;
-  padding: 0.8rem 1rem;
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(13, 59, 102, 0.15);
   z-index: 9998;
+  border: 2px solid #007bff;
+}
+
+.accessibility-controls-title {
+  font-weight: 600;
+  color: #0d3b66;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+.accessibility-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.accessibility-group.font-size {
+  justify-content: center;
+}
+
+.accessibility-group.contrast {
+  justify-content: center;
 }
 
 #decrease-font,
-#increase-font {
+#increase-font,
+#high-contrast-toggle {
   background: #007bff;
   color: white;
   border: none;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.8rem;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 14px;
-  transition: background 0.2s ease;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 #decrease-font:hover,
-#increase-font:hover {
+#increase-font:hover,
+#high-contrast-toggle:hover {
   background: #0056b3;
+  transform: scale(1.05);
 }
 
 #decrease-font:active,
-#increase-font:active {
+#increase-font:active,
+#high-contrast-toggle:active {
   background: #003d82;
+  transform: scale(0.98);
+}
+
+#high-contrast-toggle.active {
+  background: #28a745;
+}
+
+#high-contrast-toggle.active:hover {
+  background: #218838;
 }
 
 #font-size-display {
   font-weight: 600;
   color: #0d3b66;
-  min-width: 45px;
+  min-width: 50px;
   text-align: center;
   font-size: 13px;
+  background: #f0f0f0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+}
+
+/* Modo Alto Contraste */
+body.high-contrast {
+  background: #000;
+  color: #ffff00;
+}
+
+body.high-contrast .card,
+body.high-contrast .login-card,
+body.high-contrast main {
+  background: #000;
+  color: #ffff00;
+  border: 3px solid #ffff00;
+}
+
+body.high-contrast .card h1,
+body.high-contrast .login-card h1,
+body.high-contrast h2,
+body.high-contrast h3 {
+  color: #ffff00;
+}
+
+body.high-contrast label {
+  color: #ffff00;
+}
+
+body.high-contrast input,
+body.high-contrast textarea,
+body.high-contrast select {
+  background: #000;
+  color: #ffff00;
+  border: 2px solid #ffff00;
+}
+
+body.high-contrast button {
+  background: #ffff00;
+  color: #000;
+  border: 2px solid #000;
+  font-weight: bold;
+}
+
+body.high-contrast button:hover {
+  background: #cccc00;
+}
+
+body.high-contrast .number {
+  background: #000;
+  border: 2px solid #ffff00;
+  color: #ffff00;
+}
+
+body.high-contrast .number.selected {
+  background: #ffff00;
+  color: #000;
+  border: 2px solid #000;
+}
+
+body.high-contrast .tab-button {
+  color: #ffff00;
+}
+
+body.high-contrast .tab-button.active {
+  border-bottom-color: #ffff00;
+  color: #ffff00;
+}
+
+body.high-contrast .tabs {
+  border-bottom: 2px solid #ffff00;
+}
+
+body.high-contrast table {
+  border: 2px solid #ffff00;
+}
+
+body.high-contrast th,
+body.high-contrast td {
+  border-bottom: 1px solid #ffff00;
+  color: #ffff00;
+}
+
+body.high-contrast .stat-card {
+  background: #000;
+  border: 2px solid #ffff00;
+  color: #ffff00;
+}
+
+body.high-contrast .success-popup {
+  background: #ffff00;
+  color: #000;
+  border: 2px solid #000;
+}
+
+body.high-contrast .accessibility-controls {
+  background: #000;
+  border: 3px solid #ffff00;
+}
+
+body.high-contrast .accessibility-controls-title {
+  color: #ffff00;
+  border-bottom: 1px solid #ffff00;
+}
+
+body.high-contrast #font-size-display {
+  background: #111;
+  color: #ffff00;
+  border: 1px solid #ffff00;
 }
 
 @media (max-width: 640px) {
   .accessibility-controls {
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.6rem 0.8rem;
-    gap: 0.3rem;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    padding: 0.8rem;
+    gap: 0.4rem;
+  }
+
+  .accessibility-controls-title {
+    font-size: 11px;
+    margin-bottom: 0.3rem;
   }
 
   #decrease-font,
-  #increase-font {
-    padding: 0.4rem 0.6rem;
+  #increase-font,
+  #high-contrast-toggle {
+    padding: 0.5rem 0.6rem;
     font-size: 12px;
   }
 
   #font-size-display {
     font-size: 12px;
-    min-width: 40px;
+    min-width: 45px;
+    padding: 0.3rem 0.5rem;
   }
 }
 

@@ -20,8 +20,9 @@
   },
   "homepage": "https://github.com/alexandretrieste/megasena#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
     "cpf-cnpj-validator": "^1.0.3",
     "express": "^5.1.0",
-    "@supabase/supabase-js": "^2.38.0"
+    "jsonwebtoken": "^9.0.2"
   }
 }

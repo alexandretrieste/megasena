@@ -9,14 +9,20 @@
   </head>
   <body>
     <div class="accessibility-controls">
-      <button id="decrease-font" aria-label="Diminuir tamanho da fonte" title="Diminuir fonte">A-</button>
-      <span id="font-size-display">100%</span>
-      <button id="increase-font" aria-label="Aumentar tamanho da fonte" title="Aumentar fonte">A+</button>
+      <div class="accessibility-controls-title">♿ Acessibilidade</div>
+      <div class="accessibility-group font-size">
+        <button id="decrease-font" aria-label="Diminuir tamanho da fonte" title="Diminuir fonte (A-)">A−</button>
+        <span id="font-size-display">100%</span>
+        <button id="increase-font" aria-label="Aumentar tamanho da fonte" title="Aumentar fonte (A+)">A+</button>
+      </div>
+      <div class="accessibility-group contrast">
+        <button id="high-contrast-toggle" aria-label="Alternar modo alto contraste" title="Alto contraste (⚫⟷🟡)">🟡 Contraste</button>
+      </div>
     </div>
     <main>
       <section class="card">
         <h1>Simulador de Volante Mega-Sena</h1>
-        <a href="/admin.html" style="display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+        <a href="/login.html" style="display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
           🎰 Painel Administrativo
         </a>
         <form id="volante-form">

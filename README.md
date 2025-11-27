@@ -1,3 +1,4 @@
+
 # Megasena - Sorteio de Volantes
 
 Aplicação para registrar e gerenciar volantes de Mega Sena com análise de estatísticas.
@@ -168,6 +169,40 @@ megasena/
 - Entre 6 e 10 números por volante
 - Prevenção de duplicatas (nome + CPF)
 - Row Level Security (RLS) no Supabase
+- **Painel administrativo protegido por autenticação JWT com hash SHA-256**
+- Tokens JWT com expiração de 24 horas
+- Autenticação em localStorage com validação de token
+
+### Configurar Senha de Admin
+
+A senha é armazenada como **hash SHA-256** no arquivo `.env` por segurança.
+
+**Para gerar o hash de uma nova senha:**
+
+```bash
+node scripts/generate-password-hash.js "sua_senha_aqui_com_12_caracteres"
+```
+
+**Resultado:**
+```
+✅ Hash gerado com sucesso!
+
+ADMIN_PASSWORD_HASH=xxxxxxxxxxxxxxxxxxxxx...
+```
+
+**Adicione ao arquivo `.env`:**
+
+```env
+ADMIN_PASSWORD_HASH=xxxxxxxxxxxxxxxxxxxxx...
+JWT_SECRET=seu_jwt_secret_muito_seguro_aqui
+```
+
+**Importante:** 
+- A senha deve ter no mínimo 12 caracteres
+- Use uma senha forte e segura
+- JWT_SECRET deve ser uma string longa e aleatória em produção
+- Em Vercel, configure JWT_SECRET como variável de ambiente
+- O hash é unidirecional - a senha não pode ser recuperada
 
 ## 📝 Licença
 

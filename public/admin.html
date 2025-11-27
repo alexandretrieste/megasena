@@ -338,17 +338,22 @@
   </head>
   <body>
     <div class="accessibility-controls">
-      <button id="decrease-font" aria-label="Diminuir tamanho da fonte" title="Diminuir fonte">A-</button>
-      <span id="font-size-display">100%</span>
-      <button id="increase-font" aria-label="Aumentar tamanho da fonte" title="Aumentar fonte">A+</button>
+      <div class="accessibility-controls-title">♿ Acessibilidade</div>
+      <div class="accessibility-group font-size">
+        <button id="decrease-font" aria-label="Diminuir tamanho da fonte" title="Diminuir fonte (A-)">A−</button>
+        <span id="font-size-display">100%</span>
+        <button id="increase-font" aria-label="Aumentar tamanho da fonte" title="Aumentar fonte (A+)">A+</button>
+      </div>
+      <div class="accessibility-group contrast">
+        <button id="high-contrast-toggle" aria-label="Alternar modo alto contraste" title="Alto contraste (⚫⟷🟡)">🟡 Contraste</button>
+      </div>
+      <button id="logout-btn" aria-label="Logout" title="Sair do painel" style="width: 100%; margin-top: 0.5rem;">Sair</button>
     </div>
     <main>
       <section class="card">
         <h1>🎰 Painel Administrativo - Mega Sena</h1>
 
         <div class="admin-container">
-          <!-- Abas -->
-          <div class="tabs">
             <button class="tab-button active" onclick="showTab('jogos')">
               Gerar Jogos
             </button>
@@ -427,6 +432,28 @@
         }
       }
 
+      // Acessibilidade - Modo Alto Contraste
+      function toggleHighContrast() {
+        const isActive = document.body.classList.toggle('high-contrast');
+        localStorage.setItem('megasena-high-contrast', isActive);
+        
+        const btn = document.getElementById('high-contrast-toggle');
+        if (btn) {
+          btn.classList.toggle('active', isActive);
+        }
+      }
+
+      function loadHighContrastPreference() {
+        const saved = localStorage.getItem('megasena-high-contrast') === 'true';
+        if (saved) {
+          document.body.classList.add('high-contrast');
+          const btn = document.getElementById('high-contrast-toggle');
+          if (btn) {
+            btn.classList.add('active');
+          }
+        }
+      }
+
       document.getElementById('decrease-font')?.addEventListener('click', () => {
         updateFontSize(currentFontSize - 10);
       });
@@ -435,7 +462,59 @@
         updateFontSize(currentFontSize + 10);
       });
 
+      document.getElementById('high-contrast-toggle')?.addEventListener('click', toggleHighContrast);
+
       loadSavedFontSize();
+      loadHighContrastPreference();
+      });
+
+      loadSavedFontSize();
+
+      // Verificação de autenticação com JWT
+      async function checkAuthentication() {
+        const token = localStorage.getItem('admin-token');
+        if (!token) {
+          window.location.href = '/login.html';
+          return false;
+        }
+
+        try {
+          const response = await fetch('/api/admin/verify-token', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (!response.ok) {
+            localStorage.removeItem('admin-token');
+            window.location.href = '/login.html';
+            return false;
+          }
+          return true;
+        } catch (error) {
+          localStorage.removeItem('admin-token');
+          window.location.href = '/login.html';
+          return false;
+        }
+      }
+
+      // Logout
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        if (confirm('Tem certeza que deseja sair?')) {
+          localStorage.removeItem('admin-token');
+          try {
+            await fetch('/api/admin/logout', { method: 'POST' });
+          } catch (e) {
+            console.log('Logout completed');
+          }
+          window.location.href = '/login.html';
+        }
+      });
+
+      // Verificar autenticação ao carregar a página
+      checkAuthentication().then((isAuth) => {
+        if (!isAuth) {
+          throw new Error('Não autenticado');
+        }
+      });
 
       // Alternar abas
       function showTab(tabName) {
