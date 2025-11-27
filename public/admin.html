@@ -204,6 +204,38 @@
         background: #545b62;
       }
 
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #666;
+        font-size: 16px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+
+      .back-button:hover {
+        background: #f0f0f0;
+        color: #007bff;
+      }
+
+      .admin-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      .admin-header h1 {
+        flex: 1;
+        margin: 0;
+        min-width: 300px;
+      }
+
       .loading {
         text-align: center;
         padding: 40px;
@@ -351,7 +383,12 @@
     </div>
     <main>
       <section class="card">
-        <h1>🎰 Painel Administrativo - Mega Sena</h1>
+        <div class="admin-header">
+          <a href="/" class="back-button" title="Voltar para página inicial">
+            ← Voltar para Home
+          </a>
+          <h1>🎰 Painel Administrativo - Mega Sena</h1>
+        </div>
 
         <div class="admin-container">
             <button class="tab-button active" onclick="showTab('jogos')">
