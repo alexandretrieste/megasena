@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: megasena-postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: megasena
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/seed.sql:/docker-entrypoint-initdb.d/01-seed.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - megasena-network
+
+  app:
+    build: .
+    container_name: megasena-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Usar conexão direta ao PostgreSQL dentro do Docker
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/megasena
+      SUPABASE_URL: postgresql://postgres:postgres@postgres:5432/megasena
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4YW1wbGUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNTIwNjQwMCwiZXhwIjoyMzI1NDI2MDAwfQ.v8swpWWrapwHNoGVzyngI8Go3b1D86nSrKvrAKPO9BE
+      PORT: 3000
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm start"
+    networks:
+      - megasena-network
+
+networks:
+  megasena-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+
