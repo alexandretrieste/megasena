@@ -41,8 +41,11 @@ module.exports = async (req, res) => {
     }
     res.status(201).json({ message: 'Volante registrado com sucesso.' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message || 'Erro interno ao registrar volante.' });
+    console.error('Erro em /api/volantes:', error);
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? error.message 
+      : 'Erro interno ao registrar volante.';
+    res.status(500).json({ error: errorMessage });
   }
 };
 
