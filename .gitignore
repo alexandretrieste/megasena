@@ -1,0 +1,11 @@
+node_modules
+data/volantes.csv
+
+# Environment
+.env
+.env.example
+
+
+
+
+

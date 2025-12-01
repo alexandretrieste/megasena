@@ -1,0 +1,29 @@
+{
+  "name": "megasena",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node lib/migrations.js up",
+    "migrate:down": "node lib/migrations.js down"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexandretrieste/megasena.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alexandretrieste/megasena/issues"
+  },
+  "homepage": "https://github.com/alexandretrieste/megasena#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "bcryptjs": "^3.0.3",
+    "cpf-cnpj-validator": "^1.0.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

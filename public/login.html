@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Painel Administrativo</title>
+    <link rel="icon" type="image/png" href="/celebracao.png" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0d3b66 0%, #1abc9c 100%);
+      }
+
+      .login-card {
+        background: white;
+        padding: 3rem;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(13, 59, 102, 0.3);
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .login-card h1 {
+        color: #0d3b66;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        font-size: 28px;
+      }
+
+      .login-card p {
+        color: #666;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 14px;
+      }
+
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        font-weight: 600;
+        color: #0d3b66;
+        margin-bottom: 0.5rem;
+        font-size: 14px;
+      }
+
+      .form-group input {
+        padding: 0.9rem;
+        border: 2px solid #d4dcec;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #1abc9c;
+        box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+      }
+
+      .password-hint {
+        font-size: 12px;
+        color: #999;
+        margin-top: 0.3rem;
+      }
+
+      .form-group button {
+        padding: 1rem;
+        background: linear-gradient(120deg, #0d8b74, #1abc9c);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .form-group button:hover {
+        opacity: 0.9;
+      }
+
+      .form-group button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 8px;
+        display: none;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .error-message.show {
+        display: block;
+      }
+
+      .success-message {
+        background: #d4edda;
+        color: #155724;
+        padding: 1rem;
+        border-radius: 8px;
+        display: none;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .success-message.show {
+        display: block;
+      }
+
+      @media (max-width: 640px) {
+        .login-card {
+          padding: 2rem;
+          margin: 1rem;
+        }
+
+        .login-card h1 {
+          font-size: 24px;
+        }
+
+        .form-group input,
+        .form-group button {
+          font-size: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #0d3b66 0%, #1abc9c 100%);">
+    <div class="accessibility-controls">
+      <div class="accessibility-controls-title">♿ Acessibilidade</div>
+      <div class="accessibility-group font-size">
+        <button id="decrease-font" aria-label="Diminuir tamanho da fonte" title="Diminuir fonte (A-)">A−</button>
+        <span id="font-size-display">100%</span>
+        <button id="increase-font" aria-label="Aumentar tamanho da fonte" title="Aumentar fonte (A+)">A+</button>
+      </div>
+      <div class="accessibility-group contrast">
+        <button id="high-contrast-toggle" aria-label="Alternar modo alto contraste" title="Alto contraste (⚫⟷🟡)">🟡 Contraste</button>
+      </div>
+    </div>
+
+    <div class="login-container">
+      <div class="login-card">
+        <a href="/" class="back-button" title="Voltar para Home">← Início</a>
+        <h1>🎰 Mega Sena Admin</h1>
+        <p>Painel Administrativo</p>
+
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+
+        <form class="login-form" id="login-form">
+          <div class="form-group">
+            <label for="password">Senha de Acesso</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Digite a senha"
+              required
+              minlength="12"
+              autocomplete="off"
+            />
+            <span class="password-hint">Mínimo 12 dígitos</span>
+          </div>
+
+          <div class="form-group">
+            <button type="submit" id="login-btn">Acessar Painel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+      © Alexandre Trieste 2024 - todos os direitos reservados
+    </footer>
+
+    <script>
+      // Acessibilidade - Controle de tamanho de fonte
+      let currentFontSize = 100;
+      const minFontSize = 75;
+      const maxFontSize = 150;
+      const FONT_STEP = 10;
+
+      function updateFontSize(size) {
+        // Clamp to min/max
+        let target = Math.max(minFontSize, Math.min(maxFontSize, size));
+
+        // If crossing 100% from below or above, snap to 100% instead of jumping over
+        if (currentFontSize < 100 && target > 100) target = 100;
+        if (currentFontSize > 100 && target < 100) target = 100;
+
+        currentFontSize = target;
+        document.body.style.fontSize = (currentFontSize / 100) * 16 + 'px';
+        document.getElementById('font-size-display').textContent = currentFontSize + '%';
+        localStorage.setItem('megasena-font-size', currentFontSize);
+      }
+
+      function loadSavedFontSize() {
+        const saved = localStorage.getItem('megasena-font-size');
+        if (saved) {
+          updateFontSize(parseInt(saved));
+        }
+      }
+
+      // Acessibilidade - Modo Alto Contraste
+      function toggleHighContrast() {
+        const isActive = document.body.classList.toggle('high-contrast');
+        localStorage.setItem('megasena-high-contrast', isActive);
+        
+        const btn = document.getElementById('high-contrast-toggle');
+        if (btn) {
+          btn.classList.toggle('active', isActive);
+        }
+      }
+
+      function loadHighContrastPreference() {
+        const saved = localStorage.getItem('megasena-high-contrast') === 'true';
+        if (saved) {
+          document.body.classList.add('high-contrast');
+          const btn = document.getElementById('high-contrast-toggle');
+          if (btn) {
+            btn.classList.add('active');
+          }
+        }
+      }
+
+      function attachAccessibilityListeners() {
+        if (window._megasenaAccessibilityInitialized) return;
+        window._megasenaAccessibilityInitialized = true;
+
+        const decBtn = document.getElementById('decrease-font');
+        const incBtn = document.getElementById('increase-font');
+        const hcBtn = document.getElementById('high-contrast-toggle');
+
+        decBtn?.addEventListener('click', () => updateFontSize(currentFontSize - FONT_STEP));
+        incBtn?.addEventListener('click', () => updateFontSize(currentFontSize + FONT_STEP));
+        hcBtn?.addEventListener('click', toggleHighContrast);
+      }
+
+      loadSavedFontSize();
+      loadHighContrastPreference();
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachAccessibilityListeners);
+      } else {
+        attachAccessibilityListeners();
+      }
+
+      // Login
+      const loginForm = document.getElementById('login-form');
+      const passwordInput = document.getElementById('password');
+      const errorMessage = document.getElementById('error-message');
+      const successMessage = document.getElementById('success-message');
+      const loginBtn = document.getElementById('login-btn');
+
+      // Verificar se já está autenticado
+      function checkAuth() {
+        const token = localStorage.getItem('admin-token');
+        if (token) {
+          // Verificar se o token ainda é válido
+          verifyToken(token);
+        }
+      }
+
+      async function verifyToken(token) {
+        try {
+          const response = await fetch('/api/admin/verify-token', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+            window.location.href = '/admin.html';
+          } else {
+            localStorage.removeItem('admin-token');
+          }
+        } catch (error) {
+          localStorage.removeItem('admin-token');
+        }
+      }
+
+      checkAuth();
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const password = passwordInput.value;
+
+        if (password.length < 12) {
+          showError('A senha deve ter no mínimo 12 caracteres.');
+          return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Verificando...';
+        errorMessage.classList.remove('show');
+        successMessage.classList.remove('show');
+
+        try {
+          const response = await fetch('/api/admin/verify-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            // Armazenar JWT token no localStorage
+            localStorage.setItem('admin-token', data.token);
+            showSuccess('Acesso concedido! Redirecionando...');
+            setTimeout(() => {
+              window.location.href = '/admin.html';
+            }, 1000);
+          } else {
+            showError(data.error || 'Senha incorreta.');
+            passwordInput.focus();
+          }
+        } catch (error) {
+          showError('Erro ao verificar senha. Tente novamente.');
+          console.error(error);
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Acessar Painel';
+        }
+      });
+
+      function showError(msg) {
+        errorMessage.textContent = msg;
+        errorMessage.classList.add('show');
+      }
+
+      function showSuccess(msg) {
+        successMessage.textContent = msg;
+        successMessage.classList.add('show');
+      }
+
+      // Limpar campo ao focar
+      passwordInput.addEventListener('focus', () => {
+        errorMessage.classList.remove('show');
+      });
+    </script>
+  </body>
+</html>
