@@ -467,9 +467,12 @@
           <!-- Aba: Participantes -->
           <div id="participantes" class="tab-content">
             <h3>Lista de Participantes</h3>
-            <div style="margin-bottom: 1rem;">
+            <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
               <button class="btn btn-secondary" onclick="revelarCPFs()" id="btn-revelar-cpf">
                 🔓 Revelar CPFs
+              </button>
+              <button class="btn btn-primary" onclick="imprimirListaNomes()">
+                🖨️ Imprimir Lista de Nomes
               </button>
             </div>
             <div class="table-container">
@@ -887,6 +890,86 @@
         document.getElementById('btn-revelar-cpf').textContent = '🔓 Revelar CPFs';
         document.getElementById('btn-revelar-cpf').onclick = revelarCPFs;
         carregarParticipantes(false);
+      }
+
+      // Imprimir lista de nomes apenas
+      function imprimirListaNomes() {
+        if (!participantesData || participantesData.length === 0) {
+          alert('Nenhum participante para imprimir.');
+          return;
+        }
+
+        // Ordenar por nome alfabeticamente
+        const nomesOrdenados = [...participantesData]
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+          .map((v, i) => `${i + 1}. ${v.name}`)
+          .join('\n');
+
+        // Criar janela de impressão
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Lista de Participantes - Mega Sena</title>
+            <style>
+              @page {
+                margin: 2cm;
+              }
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                padding: 20px;
+              }
+              h1 {
+                text-align: center;
+                color: #0d3b66;
+                margin-bottom: 30px;
+              }
+              .info {
+                text-align: center;
+                color: #666;
+                margin-bottom: 20px;
+                font-size: 14px;
+              }
+              .lista {
+                column-count: 2;
+                column-gap: 30px;
+                margin-top: 30px;
+              }
+              .lista div {
+                break-inside: avoid;
+                margin-bottom: 8px;
+                padding: 5px;
+              }
+              @media print {
+                body {
+                  padding: 0;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>🎰 Lista de Participantes - Mega Sena</h1>
+            <div class="info">
+              Total: ${participantesData.length} participantes<br>
+              Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}
+            </div>
+            <div class="lista">
+              ${participantesData
+                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+                .map((v, i) => `<div>${i + 1}. ${v.name}</div>`)
+                .join('')}
+            </div>
+          </body>
+          </html>
+        `);
+        
+        printWindow.document.close();
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
       }
 
       // Gerar 7 jogos com top 10 números
