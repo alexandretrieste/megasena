@@ -802,8 +802,8 @@
       let jogosGeradosCache = null;
 
       function ofuscarCPF(cpf) {
-        // Formato: ***.***. XXX-XX (mostra últimos 5 dígitos)
-        return `***.***. ${cpf.slice(6, 9)}-${cpf.slice(9, 11)}`;
+        // Formato: ***.XXX.XXX-** (mostra apenas 6 dígitos do meio)
+        return `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`;
       }
 
       async function carregarParticipantes(forcarRevelar = false) {
@@ -817,6 +817,10 @@
             const volantesResponse = await fetch('/api/volantes/list');
             if (volantesResponse.ok) {
               const volantes = await volantesResponse.json();
+              
+              // Ordenar por nome alfabeticamente
+              volantes.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+              
               participantesData = volantes;
               
               tbody.innerHTML = volantes
