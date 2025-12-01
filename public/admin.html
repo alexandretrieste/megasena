@@ -438,6 +438,9 @@
             <button class="tab-button" onclick="showTab('relatorio')">
               Relatório
             </button>
+            <button class="tab-button" onclick="showTab('configuracoes')">
+              ⚙️ Configurações
+            </button>
           </div>
 
           <!-- Aba: Gerar Jogos -->
@@ -543,6 +546,63 @@
                 <h3 style="color: #0d3b66;">🎲 7 Jogos Sugeridos (10 números cada)</h3>
                 <div id="relatorio-jogos-sugeridos"></div>
               </div>
+            </div>
+          </div>
+
+          <!-- Aba: Configurações -->
+          <div id="configuracoes" class="tab-content">
+            <h3>⚙️ Configurações do Sistema</h3>
+            
+            <!-- Controle de Entradas -->
+            <div class="stat-card" style="margin-bottom: 2rem; padding: 2rem;">
+              <h4 style="margin-top: 0; color: #0d3b66;">🚪 Controle de Novas Sugestões</h4>
+              <p style="color: #666; margin-bottom: 1.5rem;">
+                Bloqueie ou permita que novos participantes enviem sugestões pela página inicial.
+              </p>
+              
+              <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <span id="entry-status-label" style="font-weight: bold; font-size: 1.1rem;">
+                  Carregando...
+                </span>
+              </div>
+              
+              <div style="display: flex; gap: 1rem;">
+                <button id="btn-enable-entries" class="btn btn-primary" onclick="toggleEntries(true)">
+                  ✅ Permitir Novas Sugestões
+                </button>
+                <button id="btn-disable-entries" class="btn" onclick="toggleEntries(false)" 
+                        style="background: #dc3545; color: white;">
+                  🚫 Bloquear Novas Sugestões
+                </button>
+              </div>
+            </div>
+
+            <!-- Zerar Banco -->
+            <div class="stat-card" style="padding: 2rem; border: 2px solid #dc3545;">
+              <h4 style="margin-top: 0; color: #dc3545;">⚠️ Zona de Perigo</h4>
+              <p style="color: #666; margin-bottom: 1.5rem;">
+                <strong>ATENÇÃO:</strong> Esta ação é irreversível e irá deletar TODOS os volantes do banco de dados.
+              </p>
+              
+              <div style="margin-bottom: 1rem;">
+                <label for="confirm-reset" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                  Digite <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">ZERAR_TUDO</code> para confirmar:
+                </label>
+                <input 
+                  type="text" 
+                  id="confirm-reset" 
+                  placeholder="ZERAR_TUDO"
+                  style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; font-family: monospace;"
+                />
+              </div>
+              
+              <button 
+                id="btn-reset-database" 
+                class="btn" 
+                onclick="resetDatabase()"
+                style="background: #dc3545; color: white; font-weight: bold;">
+                🗑️ Zerar Todos os Volantes
+              </button>
             </div>
           </div>
         </div>
@@ -1175,9 +1235,132 @@
         window.print();
       }
 
+      // ============================================
+      // CONFIGURAÇÕES DO SISTEMA
+      // ============================================
+
+      // Carregar status de entradas
+      async function loadEntryStatus() {
+        try {
+          const token = localStorage.getItem('admin-token');
+          const response = await fetch('/api/admin/entry-status', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!response.ok) throw new Error('Erro ao carregar status');
+
+          const data = await response.json();
+          updateEntryStatusUI(data.acceptingEntries);
+        } catch (error) {
+          console.error('Erro ao carregar status:', error);
+          document.getElementById('entry-status-label').textContent = 
+            '⚠️ Erro ao carregar status';
+        }
+      }
+
+      // Atualizar UI do status de entradas
+      function updateEntryStatusUI(accepting) {
+        const label = document.getElementById('entry-status-label');
+        const btnEnable = document.getElementById('btn-enable-entries');
+        const btnDisable = document.getElementById('btn-disable-entries');
+
+        if (accepting) {
+          label.textContent = '✅ Sistema ACEITANDO novas sugestões';
+          label.style.color = '#28a745';
+          btnEnable.disabled = true;
+          btnDisable.disabled = false;
+          btnEnable.style.opacity = '0.5';
+          btnDisable.style.opacity = '1';
+        } else {
+          label.textContent = '🚫 Sistema BLOQUEADO para novas sugestões';
+          label.style.color = '#dc3545';
+          btnEnable.disabled = false;
+          btnDisable.disabled = true;
+          btnEnable.style.opacity = '1';
+          btnDisable.style.opacity = '0.5';
+        }
+      }
+
+      // Alternar aceitação de entradas
+      async function toggleEntries(accept) {
+        try {
+          const token = localStorage.getItem('admin-token');
+          const response = await fetch('/api/admin/toggle-entries', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ accept })
+          });
+
+          if (!response.ok) throw new Error('Erro ao alterar configuração');
+
+          const data = await response.json();
+          updateEntryStatusUI(data.acceptingEntries);
+          alert(data.message);
+        } catch (error) {
+          console.error('Erro:', error);
+          alert('Erro ao alterar configuração: ' + error.message);
+        }
+      }
+
+      // Zerar banco de dados
+      async function resetDatabase() {
+        const confirmCode = document.getElementById('confirm-reset').value.trim();
+
+        if (confirmCode !== 'ZERAR_TUDO') {
+          alert('⚠️ Código de confirmação incorreto!\n\nDigite exatamente: ZERAR_TUDO');
+          return;
+        }
+
+        const doubleConfirm = confirm(
+          '⚠️ ÚLTIMA CONFIRMAÇÃO ⚠️\n\n' +
+          'Você tem CERTEZA ABSOLUTA que deseja DELETAR TODOS os volantes?\n\n' +
+          'Esta ação é IRREVERSÍVEL!\n\n' +
+          'Clique em OK para confirmar a exclusão completa.'
+        );
+
+        if (!doubleConfirm) {
+          document.getElementById('confirm-reset').value = '';
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem('admin-token');
+          const response = await fetch('/api/admin/reset-database', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ confirmCode })
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error);
+          }
+
+          const data = await response.json();
+          alert('✅ ' + data.message);
+          
+          // Limpar campo e recarregar estatísticas
+          document.getElementById('confirm-reset').value = '';
+          carregarEstatisticas();
+          carregarParticipantes();
+        } catch (error) {
+          console.error('Erro:', error);
+          alert('❌ Erro ao zerar banco: ' + error.message);
+        }
+      }
+
       // Carregar estatísticas ao abrir a página
       window.addEventListener('load', () => {
         carregarEstatisticas();
+        loadEntryStatus(); // Carregar status de entradas
       });
     </script>
   </body>

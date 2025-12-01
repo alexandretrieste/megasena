@@ -202,6 +202,10 @@ async function submitVolante(event) {
     if (contentType.includes('application/json')) {
       data = await response.json();
       if (!response.ok) {
+        // Se status 403, mostrar mensagem especial
+        if (response.status === 403) {
+          throw new Error('🚫 O sistema não está aceitando novas sugestões no momento. Por favor, tente novamente mais tarde.');
+        }
         throw new Error((data && data.error) || 'Falha ao registrar volante.');
       }
     } else {

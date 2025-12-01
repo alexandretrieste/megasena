@@ -10,6 +10,19 @@ CREATE TABLE IF NOT EXISTS volantes (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Tabela de configurações do sistema
+CREATE TABLE IF NOT EXISTS system_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT UNIQUE NOT NULL,
+  value BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Inserir configuração inicial (aceitar novas entradas)
+INSERT INTO system_config (key, value)
+VALUES ('accept_new_entries', true)
+ON CONFLICT (key) DO NOTHING;
+
 CREATE INDEX IF NOT EXISTS idx_volantes_cpf ON volantes(cpf);
 CREATE INDEX IF NOT EXISTS idx_volantes_timestamp ON volantes(timestamp);
 

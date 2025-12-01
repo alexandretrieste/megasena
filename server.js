@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { registerVolante, getStats } = require('./lib/volanteService');
+const supabase = require('./lib/supabaseClient');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -84,6 +85,19 @@ app.get('/api/admin/verify-token', verifyAdminToken, (req, res) => {
 
 app.post('/api/volantes', async (req, res) => {
   try {
+    // Verificar se o sistema está aceitando novas entradas
+    const { data: config } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'accept_new_entries')
+      .single();
+
+    if (config && !config.value) {
+      return res.status(403).json({ 
+        error: 'O sistema não está aceitando novas sugestões no momento.' 
+      });
+    }
+
     const result = await registerVolante(req.body || {});
     if (!result.ok) {
       return res.status(400).json({ error: result.error });
@@ -113,6 +127,88 @@ app.get('/api/volantes/list', async (_req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao listar volantes.' });
+  }
+});
+
+// Admin: Verificar status de aceitação de entradas
+app.get('/api/admin/entry-status', verifyAdminToken, async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'accept_new_entries')
+      .single();
+
+    if (error) {
+      // Se não existir, criar com valor padrão true
+      const { data: newConfig } = await supabase
+        .from('system_config')
+        .insert({ key: 'accept_new_entries', value: true })
+        .select()
+        .single();
+      
+      return res.json({ acceptingEntries: newConfig?.value ?? true });
+    }
+
+    res.json({ acceptingEntries: data.value });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao verificar status.' });
+  }
+});
+
+// Admin: Alternar aceitação de novas entradas
+app.post('/api/admin/toggle-entries', verifyAdminToken, async (req, res) => {
+  try {
+    const { accept } = req.body;
+
+    const { data, error } = await supabase
+      .from('system_config')
+      .update({ value: accept, updated_at: new Date().toISOString() })
+      .eq('key', 'accept_new_entries')
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ 
+      success: true, 
+      acceptingEntries: data.value,
+      message: accept ? 'Sistema aceitando novas entradas.' : 'Sistema bloqueado para novas entradas.'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao alterar configuração.' });
+  }
+});
+
+// Admin: Zerar todos os volantes (com confirmação)
+app.delete('/api/admin/reset-database', verifyAdminToken, async (req, res) => {
+  try {
+    const { confirmCode } = req.body;
+
+    // Código de confirmação deve ser "ZERAR_TUDO"
+    if (confirmCode !== 'ZERAR_TUDO') {
+      return res.status(400).json({ 
+        error: 'Código de confirmação inválido. Digite: ZERAR_TUDO' 
+      });
+    }
+
+    // Deletar todos os volantes
+    const { error } = await supabase
+      .from('volantes')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Deleta todos
+
+    if (error) throw error;
+
+    res.json({ 
+      success: true, 
+      message: 'Todos os volantes foram removidos com sucesso.' 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao zerar banco de dados.' });
   }
 });
 
