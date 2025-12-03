@@ -467,14 +467,93 @@
           <!-- Aba: Participantes -->
           <div id="participantes" class="tab-content">
             <h3>Lista de Participantes</h3>
-            <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
-              <button class="btn btn-secondary" onclick="revelarCPFs()" id="btn-revelar-cpf">
-                🔓 Revelar CPFs
-              </button>
-              <button class="btn btn-primary" onclick="imprimirListaNomes()">
-                🖨️ Imprimir Lista de Nomes
-              </button>
+            
+            <!-- Área de Revelar CPFs -->
+            <div id="cpf-reveal-section" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+              <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px;">
+                  <label for="senha-revelar" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                    🔐 Digite a senha para revelar CPFs:
+                  </label>
+                  <input 
+                    type="password" 
+                    id="senha-revelar" 
+                    placeholder="Senha de administrador"
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;"
+                    onkeypress="if(event.key === 'Enter') revelarCPFs()"
+                  />
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                  <button class="btn btn-secondary" onclick="revelarCPFs()" id="btn-revelar-cpf">
+                    🔓 Revelar CPFs
+                  </button>
+                  <button class="btn btn-primary" onclick="imprimirListaNomes()">
+                    🖨️ Imprimir Lista
+                  </button>
+                </div>
+              </div>
+              <div id="cpf-reveal-feedback" style="margin-top: 0.5rem; color: #dc3545; font-size: 0.9rem;"></div>
             </div>
+
+            <!-- Barra de Pesquisa e Filtros -->
+            <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #ddd;">
+              <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                  <label for="search-participantes" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
+                    🔍 Pesquisar:
+                  </label>
+                  <input 
+                    type="text" 
+                    id="search-participantes" 
+                    placeholder="Nome, CPF ou números..."
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    oninput="filtrarParticipantes()"
+                  />
+                </div>
+                <div style="min-width: 150px;">
+                  <label for="filter-data-inicio" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
+                    📅 Data Início:
+                  </label>
+                  <input 
+                    type="date" 
+                    id="filter-data-inicio"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    onchange="filtrarParticipantes()"
+                  />
+                </div>
+                <div style="min-width: 150px;">
+                  <label for="filter-data-fim" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
+                    📅 Data Fim:
+                  </label>
+                  <input 
+                    type="date" 
+                    id="filter-data-fim"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    onchange="filtrarParticipantes()"
+                  />
+                </div>
+                <div style="min-width: 150px;">
+                  <label for="sort-participantes" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
+                    ⬆️ Ordenar por:
+                  </label>
+                  <select 
+                    id="sort-participantes"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    onchange="filtrarParticipantes()"
+                  >
+                    <option value="nome-asc">Nome (A-Z)</option>
+                    <option value="nome-desc">Nome (Z-A)</option>
+                    <option value="data-desc">Data (Mais recente)</option>
+                    <option value="data-asc">Data (Mais antigo)</option>
+                  </select>
+                </div>
+                <button class="btn" onclick="limparFiltros()" style="background: #6c757d; color: white; height: fit-content;">
+                  🗑️ Limpar
+                </button>
+              </div>
+              <div id="resultado-filtro" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;"></div>
+            </div>
+
             <div class="table-container">
               <table id="participantes-table">
                 <thead>
@@ -800,6 +879,7 @@
       // Carregar participantes
       let cpfsRevelados = false;
       let participantesData = [];
+      let participantesFiltrados = [];
       
       // Armazenar jogos gerados globalmente
       let jogosGeradosCache = null;
@@ -820,25 +900,10 @@
             const volantesResponse = await fetch('/api/volantes/list');
             if (volantesResponse.ok) {
               const volantes = await volantesResponse.json();
-              
-              // Ordenar por nome alfabeticamente
-              volantes.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-              
               participantesData = volantes;
+              participantesFiltrados = volantes;
               
-              tbody.innerHTML = volantes
-                .map(
-                  (v, i) => `
-                <tr>
-                  <td>${i + 1}</td>
-                  <td>${v.name}</td>
-                  <td class="cpf-cell">${cpfsRevelados || forcarRevelar ? v.cpf : ofuscarCPF(v.cpf)}</td>
-                  <td>${v.numbers.join(', ')}</td>
-                  <td>${new Date(v.timestamp).toLocaleDateString('pt-BR')}</td>
-                </tr>
-              `
-                )
-                .join('');
+              filtrarParticipantes(); // Aplica filtros e renderiza
             } else {
               tbody.innerHTML = `
                 <tr>
@@ -858,9 +923,113 @@
         }
       }
 
+      function renderizarParticipantes(dados) {
+        const tbody = document.getElementById('participantes-tbody');
+        
+        if (dados.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2rem; color: #666;">
+                Nenhum participante encontrado com os filtros aplicados.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = dados
+          .map((v, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${v.name}</td>
+              <td class="cpf-cell">${cpfsRevelados ? v.cpf : ofuscarCPF(v.cpf)}</td>
+              <td>${v.numbers.join(', ')}</td>
+              <td>${new Date(v.timestamp).toLocaleDateString('pt-BR')}</td>
+            </tr>
+          `)
+          .join('');
+        
+        // Atualizar contador de resultados
+        const total = participantesData.length;
+        const filtrados = dados.length;
+        const resultadoDiv = document.getElementById('resultado-filtro');
+        
+        if (filtrados < total) {
+          resultadoDiv.textContent = `Mostrando ${filtrados} de ${total} participantes`;
+        } else {
+          resultadoDiv.textContent = `Total: ${total} participantes`;
+        }
+      }
+
+      function filtrarParticipantes() {
+        const searchTerm = document.getElementById('search-participantes')?.value.toLowerCase() || '';
+        const dataInicio = document.getElementById('filter-data-inicio')?.value || '';
+        const dataFim = document.getElementById('filter-data-fim')?.value || '';
+        const ordenacao = document.getElementById('sort-participantes')?.value || 'nome-asc';
+
+        let filtered = [...participantesData];
+
+        // Filtro de pesquisa (nome, CPF, números)
+        if (searchTerm) {
+          filtered = filtered.filter(v => 
+            v.name.toLowerCase().includes(searchTerm) ||
+            v.cpf.includes(searchTerm.replace(/\D/g, '')) ||
+            v.numbers.some(num => num.toString().includes(searchTerm))
+          );
+        }
+
+        // Filtro de data
+        if (dataInicio) {
+          const inicio = new Date(dataInicio);
+          inicio.setHours(0, 0, 0, 0);
+          filtered = filtered.filter(v => new Date(v.timestamp) >= inicio);
+        }
+
+        if (dataFim) {
+          const fim = new Date(dataFim);
+          fim.setHours(23, 59, 59, 999);
+          filtered = filtered.filter(v => new Date(v.timestamp) <= fim);
+        }
+
+        // Ordenação
+        switch (ordenacao) {
+          case 'nome-asc':
+            filtered.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+            break;
+          case 'nome-desc':
+            filtered.sort((a, b) => b.name.localeCompare(a.name, 'pt-BR'));
+            break;
+          case 'data-desc':
+            filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            break;
+          case 'data-asc':
+            filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            break;
+        }
+
+        participantesFiltrados = filtered;
+        renderizarParticipantes(filtered);
+      }
+
+      function limparFiltros() {
+        document.getElementById('search-participantes').value = '';
+        document.getElementById('filter-data-inicio').value = '';
+        document.getElementById('filter-data-fim').value = '';
+        document.getElementById('sort-participantes').value = 'nome-asc';
+        filtrarParticipantes();
+      }
+
       async function revelarCPFs() {
-        const senha = prompt('Digite a senha de administrador para revelar os CPFs:');
-        if (!senha) return;
+        const senha = document.getElementById('senha-revelar')?.value;
+        const feedbackDiv = document.getElementById('cpf-reveal-feedback');
+
+        if (!senha) {
+          feedbackDiv.textContent = '⚠️ Por favor, digite a senha';
+          return;
+        }
+
+        feedbackDiv.textContent = 'Verificando...';
+        feedbackDiv.style.color = '#666';
 
         try {
           const response = await fetch('/api/admin/verify-password', {
@@ -873,14 +1042,19 @@
 
           if (response.ok && result.success) {
             cpfsRevelados = true;
+            feedbackDiv.textContent = '✅ CPFs revelados com sucesso!';
+            feedbackDiv.style.color = '#28a745';
             document.getElementById('btn-revelar-cpf').textContent = '🔒 Ocultar CPFs';
             document.getElementById('btn-revelar-cpf').onclick = ocultarCPFs;
-            carregarParticipantes(true);
+            document.getElementById('senha-revelar').value = '';
+            renderizarParticipantes(participantesFiltrados);
           } else {
-            alert('Senha incorreta!');
+            feedbackDiv.textContent = '❌ Senha incorreta!';
+            feedbackDiv.style.color = '#dc3545';
           }
         } catch (error) {
-          alert('Erro ao verificar senha');
+          feedbackDiv.textContent = '❌ Erro ao verificar senha';
+          feedbackDiv.style.color = '#dc3545';
           console.error(error);
         }
       }
@@ -889,7 +1063,8 @@
         cpfsRevelados = false;
         document.getElementById('btn-revelar-cpf').textContent = '🔓 Revelar CPFs';
         document.getElementById('btn-revelar-cpf').onclick = revelarCPFs;
-        carregarParticipantes(false);
+        document.getElementById('cpf-reveal-feedback').textContent = '';
+        renderizarParticipantes(participantesFiltrados);
       }
 
       // Imprimir lista de nomes apenas
