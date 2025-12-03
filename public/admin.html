@@ -338,6 +338,48 @@
           font-size: 14px;
         }
 
+        /* Responsividade dos filtros de participantes */
+        #cpf-reveal-section {
+          padding: 0.75rem !important;
+        }
+
+        #cpf-reveal-section input[type="password"] {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 100% !important;
+          margin-bottom: 0.5rem;
+        }
+
+        #cpf-reveal-section > div {
+          flex-direction: column !important;
+          align-items: stretch !important;
+        }
+
+        #cpf-reveal-section button {
+          width: 100% !important;
+          margin-bottom: 0.5rem;
+        }
+
+        .btn {
+          font-size: 0.85rem !important;
+          padding: 0.5rem 0.75rem !important;
+        }
+
+        /* Grid responsivo para filtros */
+        #participantes .table-container {
+          overflow-x: auto;
+        }
+
+        #participantes table {
+          font-size: 0.8rem;
+        }
+
+        #participantes th,
+        #participantes td {
+          padding: 0.5rem 0.3rem;
+          white-space: nowrap;
+        }
+
         .numeros-jogo {
           grid-template-columns: repeat(3, 1fr);
           gap: 5px;
@@ -469,89 +511,85 @@
             <h3>Lista de Participantes</h3>
             
             <!-- Área de Revelar CPFs -->
-            <div id="cpf-reveal-section" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
-              <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 250px;">
-                  <label for="senha-revelar" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
-                    🔐 Digite a senha para revelar CPFs:
-                  </label>
-                  <input 
-                    type="password" 
-                    id="senha-revelar" 
-                    placeholder="Senha de administrador"
-                    style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;"
-                    onkeypress="if(event.key === 'Enter') revelarCPFs()"
-                  />
-                </div>
-                <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
-                  <button class="btn btn-secondary" onclick="revelarCPFs()" id="btn-revelar-cpf">
-                    🔓 Revelar CPFs
-                  </button>
-                  <button class="btn btn-primary" onclick="imprimirListaNomes()">
-                    🖨️ Imprimir Lista
-                  </button>
-                </div>
+            <div id="cpf-reveal-section" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+              <label for="senha-revelar" style="display: block; margin-bottom: 0.5rem; font-weight: bold; font-size: 0.95rem;">
+                🔐 Digite a senha para revelar CPFs:
+              </label>
+              <div style="display: flex; gap: 0.5rem; align-items: flex-start; flex-wrap: wrap;">
+                <input 
+                  type="password" 
+                  id="senha-revelar" 
+                  placeholder="Senha de administrador"
+                  style="flex: 1; min-width: 200px; max-width: 400px; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem;"
+                  onkeypress="if(event.key === 'Enter') revelarCPFs()"
+                />
+                <button class="btn btn-secondary" onclick="revelarCPFs()" id="btn-revelar-cpf" style="white-space: nowrap;">
+                  🔓 Revelar CPFs
+                </button>
+                <button class="btn btn-primary" onclick="imprimirListaNomes()" style="white-space: nowrap;">
+                  🖨️ Imprimir Lista
+                </button>
               </div>
-              <div id="cpf-reveal-feedback" style="margin-top: 0.5rem; color: #dc3545; font-size: 0.9rem;"></div>
+              <div id="cpf-reveal-feedback" style="margin-top: 0.5rem; color: #dc3545; font-size: 0.85rem; min-height: 1.2rem;"></div>
             </div>
 
             <!-- Barra de Pesquisa e Filtros -->
             <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #ddd;">
-              <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
-                <div style="flex: 1; min-width: 200px;">
-                  <label for="search-participantes" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; align-items: end;">
+                <div style="grid-column: span 1;">
+                  <label for="search-participantes" style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; font-weight: 500;">
                     🔍 Pesquisar:
                   </label>
                   <input 
                     type="text" 
                     id="search-participantes" 
-                    placeholder="Nome, CPF ou números..."
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    placeholder="Nome, CPF..."
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
                     oninput="filtrarParticipantes()"
                   />
                 </div>
-                <div style="min-width: 150px;">
-                  <label for="filter-data-inicio" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
-                    📅 Data Início:
+                <div>
+                  <label for="filter-data-inicio" style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; font-weight: 500;">
+                    📅 Início:
                   </label>
                   <input 
                     type="date" 
                     id="filter-data-inicio"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
                     onchange="filtrarParticipantes()"
                   />
                 </div>
-                <div style="min-width: 150px;">
-                  <label for="filter-data-fim" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
-                    📅 Data Fim:
+                <div>
+                  <label for="filter-data-fim" style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; font-weight: 500;">
+                    📅 Fim:
                   </label>
                   <input 
                     type="date" 
                     id="filter-data-fim"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
                     onchange="filtrarParticipantes()"
                   />
                 </div>
-                <div style="min-width: 150px;">
-                  <label for="sort-participantes" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem; font-weight: 500;">
-                    ⬆️ Ordenar por:
+                <div>
+                  <label for="sort-participantes" style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; font-weight: 500;">
+                    ⬆️ Ordenar:
                   </label>
                   <select 
                     id="sort-participantes"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
                     onchange="filtrarParticipantes()"
                   >
                     <option value="nome-asc">Nome (A-Z)</option>
                     <option value="nome-desc">Nome (Z-A)</option>
-                    <option value="data-desc">Data (Mais recente)</option>
-                    <option value="data-asc">Data (Mais antigo)</option>
+                    <option value="data-desc">Mais recente</option>
+                    <option value="data-asc">Mais antigo</option>
                   </select>
                 </div>
-                <button class="btn" onclick="limparFiltros()" style="background: #6c757d; color: white; height: fit-content;">
+                <button class="btn" onclick="limparFiltros()" style="background: #6c757d; color: white; white-space: nowrap; padding: 0.5rem 1rem;">
                   🗑️ Limpar
                 </button>
               </div>
-              <div id="resultado-filtro" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;"></div>
+              <div id="resultado-filtro" style="margin-top: 0.75rem; color: #666; font-size: 0.85rem; font-weight: 500;"></div>
             </div>
 
             <div class="table-container">
@@ -926,14 +964,21 @@
       function renderizarParticipantes(dados) {
         const tbody = document.getElementById('participantes-tbody');
         
-        if (dados.length === 0) {
+        console.log('Renderizando participantes:', dados.length);
+        
+        if (!dados || dados.length === 0) {
           tbody.innerHTML = `
             <tr>
               <td colspan="5" style="text-align: center; padding: 2rem; color: #666;">
-                Nenhum participante encontrado com os filtros aplicados.
+                ${participantesData.length === 0 ? 'Nenhum participante cadastrado.' : 'Nenhum participante encontrado com os filtros aplicados.'}
               </td>
             </tr>
           `;
+          
+          const resultadoDiv = document.getElementById('resultado-filtro');
+          if (resultadoDiv) {
+            resultadoDiv.textContent = participantesData.length === 0 ? '' : `Mostrando 0 de ${participantesData.length} participantes`;
+          }
           return;
         }
 
@@ -941,10 +986,10 @@
           .map((v, i) => `
             <tr>
               <td>${i + 1}</td>
-              <td>${v.name}</td>
-              <td class="cpf-cell">${cpfsRevelados ? v.cpf : ofuscarCPF(v.cpf)}</td>
-              <td>${v.numbers.join(', ')}</td>
-              <td>${new Date(v.timestamp).toLocaleDateString('pt-BR')}</td>
+              <td>${v.name || 'N/A'}</td>
+              <td class="cpf-cell">${cpfsRevelados ? (v.cpf || 'N/A') : ofuscarCPF(v.cpf || '00000000000')}</td>
+              <td>${(v.numbers && v.numbers.length > 0) ? v.numbers.join(', ') : 'N/A'}</td>
+              <td>${v.timestamp ? new Date(v.timestamp).toLocaleDateString('pt-BR') : 'N/A'}</td>
             </tr>
           `)
           .join('');
@@ -954,42 +999,58 @@
         const filtrados = dados.length;
         const resultadoDiv = document.getElementById('resultado-filtro');
         
-        if (filtrados < total) {
-          resultadoDiv.textContent = `Mostrando ${filtrados} de ${total} participantes`;
-        } else {
-          resultadoDiv.textContent = `Total: ${total} participantes`;
+        if (resultadoDiv) {
+          if (filtrados < total) {
+            resultadoDiv.textContent = `Mostrando ${filtrados} de ${total} participantes`;
+          } else {
+            resultadoDiv.textContent = `Total: ${total} participantes`;
+          }
         }
       }
 
       function filtrarParticipantes() {
+        if (!participantesData || participantesData.length === 0) {
+          console.log('Nenhum dado de participantes disponível');
+          return;
+        }
+
         const searchTerm = document.getElementById('search-participantes')?.value.toLowerCase() || '';
         const dataInicio = document.getElementById('filter-data-inicio')?.value || '';
         const dataFim = document.getElementById('filter-data-fim')?.value || '';
         const ordenacao = document.getElementById('sort-participantes')?.value || 'nome-asc';
 
+        console.log('Filtros aplicados:', { searchTerm, dataInicio, dataFim, ordenacao });
+
         let filtered = [...participantesData];
 
         // Filtro de pesquisa (nome, CPF, números)
         if (searchTerm) {
-          filtered = filtered.filter(v => 
-            v.name.toLowerCase().includes(searchTerm) ||
-            v.cpf.includes(searchTerm.replace(/\D/g, '')) ||
-            v.numbers.some(num => num.toString().includes(searchTerm))
-          );
+          filtered = filtered.filter(v => {
+            const nomeMatch = v.name && v.name.toLowerCase().includes(searchTerm);
+            const cpfMatch = v.cpf && v.cpf.replace(/\D/g, '').includes(searchTerm.replace(/\D/g, ''));
+            const numerosMatch = v.numbers && v.numbers.some(num => num.toString().includes(searchTerm));
+            return nomeMatch || cpfMatch || numerosMatch;
+          });
         }
 
         // Filtro de data
         if (dataInicio) {
-          const inicio = new Date(dataInicio);
-          inicio.setHours(0, 0, 0, 0);
-          filtered = filtered.filter(v => new Date(v.timestamp) >= inicio);
+          const inicio = new Date(dataInicio + 'T00:00:00');
+          filtered = filtered.filter(v => {
+            const dataVolante = new Date(v.timestamp);
+            return dataVolante >= inicio;
+          });
         }
 
         if (dataFim) {
-          const fim = new Date(dataFim);
-          fim.setHours(23, 59, 59, 999);
-          filtered = filtered.filter(v => new Date(v.timestamp) <= fim);
+          const fim = new Date(dataFim + 'T23:59:59');
+          filtered = filtered.filter(v => {
+            const dataVolante = new Date(v.timestamp);
+            return dataVolante <= fim;
+          });
         }
+
+        console.log(`Filtrados: ${filtered.length} de ${participantesData.length}`);
 
         // Ordenação
         switch (ordenacao) {
