@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Painel Administrativo - Mega Sena</title>
     <link rel="icon" type="image/png" href="/celebracao.png" />
     <link rel="stylesheet" href="style.css" />
@@ -520,7 +520,7 @@
                   type="password" 
                   id="senha-revelar" 
                   placeholder="Senha de administrador"
-                  style="flex: 1; min-width: 200px; max-width: 400px; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem;"
+                  style="flex: 1; min-width: 200px; max-width: 400px; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
                   onkeypress="if(event.key === 'Enter') revelarCPFs()"
                 />
                 <button class="btn btn-secondary" onclick="revelarCPFs()" id="btn-revelar-cpf" style="white-space: nowrap;">
@@ -544,7 +544,7 @@
                     type="text" 
                     id="search-participantes" 
                     placeholder="Nome, CPF..."
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
                     oninput="filtrarParticipantes()"
                   />
                 </div>
@@ -555,7 +555,7 @@
                   <input 
                     type="date" 
                     id="filter-data-inicio"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
                     onchange="filtrarParticipantes()"
                   />
                 </div>
@@ -566,7 +566,7 @@
                   <input 
                     type="date" 
                     id="filter-data-fim"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
                     onchange="filtrarParticipantes()"
                   />
                 </div>
@@ -576,7 +576,7 @@
                   </label>
                   <select 
                     id="sort-participantes"
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
                     onchange="filtrarParticipantes()"
                   >
                     <option value="nome-asc">Nome (A-Z)</option>

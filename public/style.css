@@ -10,6 +10,7 @@
 
 body {
   margin: 0;
+  padding: 1rem;
   font-size: 16px;
   transition: font-size 0.2s ease;
 }
@@ -18,14 +19,14 @@ main {
   max-width: 960px;
   margin: 0 auto;
   display: grid;
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .card {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(13, 59, 102, 0.1);
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 h1,
@@ -51,7 +52,11 @@ input {
   padding: 0.7rem;
   border-radius: 8px;
   border: 1px solid #d4dcec;
-  font-size: 1rem;
+  font-size: 16px;
+}
+
+select, textarea {
+  font-size: 16px;
 }
 
 #numbers-grid {
