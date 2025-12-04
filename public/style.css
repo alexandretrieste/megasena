@@ -10,8 +10,6 @@
 
 body {
   margin: 0;
-  padding: 2rem;
-  padding-top: 3.5rem;
   font-size: 16px;
   transition: font-size 0.2s ease;
 }
@@ -174,17 +172,12 @@ td {
 }
 
 .accessibility-controls {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
   background: linear-gradient(90deg, #0d3b66, #1abc9c);
   padding: 0.8rem 1rem;
-  z-index: 9999;
   border-bottom: 2px solid #007bff;
   box-shadow: 0 2px 8px rgba(13, 59, 102, 0.2);
 }
