@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
@@ -16,6 +17,15 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('he
 // Função para gerar hash SHA-256
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function validateAdminPassword(password) {
+  const lengthValid = password.length >= 12;
+  const upperValid = /[A-Z]/.test(password);
+  const lowerValid = /[a-z]/.test(password);
+  const digitValid = /[0-9]/.test(password);
+  const specialValid = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+  return lengthValid && upperValid && lowerValid && digitValid && specialValid;
 }
 
 // Middleware
@@ -48,8 +58,10 @@ app.post('/api/admin/verify-password', (req, res) => {
     return res.status(400).json({ error: 'Senha obrigatória.' });
   }
 
-  if (password.length < 12) {
-    return res.status(400).json({ error: 'A senha deve ter no mínimo 12 caracteres.' });
+  if (!validateAdminPassword(password)) {
+    return res.status(400).json({
+      error: 'Senha inválida. Use no mínimo 12 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.'
+    });
   }
 
   // Comparar com hash da senha
@@ -182,29 +194,66 @@ app.post('/api/admin/toggle-entries', verifyAdminToken, async (req, res) => {
   }
 });
 
-// Admin: Zerar todos os volantes (com confirmação)
+async function deleteAllVolantes() {
+  const { error } = await supabase
+    .from('volantes')
+    .delete()
+    .not('id', 'is', null);
+
+  if (error) throw error;
+}
+
+async function resetSystemConfigDefault() {
+  const { error } = await supabase
+    .from('system_config')
+    .upsert(
+      [{ key: 'accept_new_entries', value: true }],
+      { onConflict: 'key' }
+    );
+
+  if (error) throw error;
+}
+
+// Admin: Zerar apenas os volantes/participantes
+app.delete('/api/admin/reset-volantes', verifyAdminToken, async (req, res) => {
+  try {
+    const { confirmCode } = req.body;
+
+    if (!['ZERAR_VOLANTES', 'ZERAR_PARTICIPANTES'].includes(confirmCode)) {
+      return res.status(400).json({ 
+        error: 'Código de confirmação inválido. Use ZERAR_VOLANTES ou ZERAR_PARTICIPANTES.' 
+      });
+    }
+
+    await deleteAllVolantes();
+
+    res.json({ 
+      success: true, 
+      message: 'Todos os volantes/participantes foram removidos com sucesso.' 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao zerar volantes.' });
+  }
+});
+
+// Admin: Zerar tudo e restaurar configurações básicas
 app.delete('/api/admin/reset-database', verifyAdminToken, async (req, res) => {
   try {
     const { confirmCode } = req.body;
 
-    // Código de confirmação deve ser "ZERAR_TUDO"
     if (confirmCode !== 'ZERAR_TUDO') {
       return res.status(400).json({ 
         error: 'Código de confirmação inválido. Digite: ZERAR_TUDO' 
       });
     }
 
-    // Deletar todos os volantes
-    const { error } = await supabase
-      .from('volantes')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Deleta todos
-
-    if (error) throw error;
+    await deleteAllVolantes();
+    await resetSystemConfigDefault();
 
     res.json({ 
       success: true, 
-      message: 'Todos os volantes foram removidos com sucesso.' 
+      message: 'Todos os dados foram removidos e as configurações foram reiniciadas.' 
     });
   } catch (error) {
     console.error(error);

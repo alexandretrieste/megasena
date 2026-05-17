@@ -487,9 +487,21 @@
 
           <!-- Aba: Gerar Jogos -->
           <div id="jogos" class="tab-content active">
+            <div class="btn-group" style="flex-wrap: wrap; gap: 0.75rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; width: 100%; max-width: 560px;">
+                <label style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  Quantas dezenas por jogo?
+                  <input type="number" id="dezenas-por-jogo" min="6" max="10" value="10" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  Quantos jogos gerar?
+                  <input type="number" id="quantidade-jogos" min="1" max="20" value="7" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
+                </label>
+              </div>
+            </div>
             <div class="btn-group">
               <button class="btn btn-success" onclick="gerarJogos()">
-                Gerar 7 Jogos com Top 10
+                Gerar Jogos
               </button>
               <button class="btn btn-secondary" onclick="limparJogos()">
                 Limpar
@@ -501,6 +513,12 @@
 
           <!-- Aba: Estatísticas -->
           <div id="estatisticas" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+              <h3 style="margin: 0;">Estatísticas</h3>
+              <button class="btn btn-secondary" onclick="resetEstatisticas()" style="background: #ffc107; color: #212529;">
+                🔄 Reset Estatísticas
+              </button>
+            </div>
             <div class="stats-grid" id="stats-container"></div>
             <h3>Top 10 Números Sugeridos</h3>
             <div class="stats-grid" id="top-numeros"></div>
@@ -590,6 +608,12 @@
                 </button>
               </div>
               <div id="resultado-filtro" style="margin-top: 0.75rem; color: #666; font-size: 0.85rem; font-weight: 500;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem; gap: 0.75rem;">
+              <button class="btn btn-secondary" onclick="resetParticipants()">
+                🗑️ Zerar Participantes
+              </button>
             </div>
 
             <div class="table-container">
@@ -721,7 +745,7 @@
                 class="btn" 
                 onclick="resetDatabase()"
                 style="background: #dc3545; color: white; font-weight: bold;">
-                🗑️ Zerar Todos os Volantes
+                🗑️ Zerar Tudo (Volantes + Participantes)
               </button>
             </div>
           </div>
@@ -912,6 +936,20 @@
             <div class="error">Erro ao carregar estatísticas</div>
           `;
         }
+      }
+
+      function resetEstatisticas() {
+        document.getElementById('stats-container').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Total de Volantes</div>
+          </div>
+        `;
+        document.getElementById('top-numeros').innerHTML = `
+          <div class="stat-card" style="grid-column: span 10; text-align: center; background: #fff3cd; color: #856404;">
+            <div class="stat-label">Estatísticas resetadas.</div>
+          </div>
+        `;
       }
 
       // Carregar participantes
@@ -1208,55 +1246,49 @@
         }, 250);
       }
 
-      // Gerar 7 jogos com top 10 números
+      // Gerar jogos com número de dezenas e quantidade de jogos configuráveis
       async function gerarJogos() {
         try {
-          // Buscar estatísticas para top 10
+          const dezenasPorJogo = Number(document.getElementById('dezenas-por-jogo').value);
+          const quantidadeJogos = Number(document.getElementById('quantidade-jogos').value);
+
+          if (!dezenasPorJogo || dezenasPorJogo < 6 || dezenasPorJogo > 10) {
+            throw new Error('Escolha entre 6 e 10 dezenas por jogo.');
+          }
+
+          if (!quantidadeJogos || quantidadeJogos < 1 || quantidadeJogos > 20) {
+            throw new Error('Escolha entre 1 e 20 jogos.');
+          }
+
           const responseStats = await fetch('/api/stats/top-numbers');
           const dataStats = await responseStats.json();
 
-          if (!responseStats.ok) throw new Error('Erro ao carregar dados');
+          if (!responseStats.ok) throw new Error('Erro ao carregar dados de estatísticas');
 
-          // Top 10 números mais sugeridos (ordenados por frequência)
-          const top10 = dataStats.topNumbers.slice(0, 10).map((n) => n.number);
+          const top10 = dataStats.topNumbers.map((n) => n.number);
 
-          if (top10.length < 10) {
-            document.getElementById('jogos-resultado').innerHTML = `
-              <div class="error">Não há números suficientes para gerar jogos. Mínimo 10 números necessários.</div>
-            `;
-            return;
-          }
-
-          // Buscar TODOS os números sugeridos do banco (de todos os volantes)
           const responseVolantes = await fetch('/api/volantes/list');
           if (!responseVolantes.ok) throw new Error('Erro ao carregar volantes');
-          
+
           const volantes = await responseVolantes.json();
-          
-          // Extrair todos os números únicos sugeridos
           const todosNumerosSet = new Set();
           volantes.forEach((volante) => {
             volante.numbers.forEach((num) => todosNumerosSet.add(num));
           });
-          const todosNumeros = Array.from(todosNumerosSet);
+          const todosNumeros = Array.from(todosNumerosSet).sort((a, b) => a - b);
 
-          if (todosNumeros.length < 10) {
-            document.getElementById('jogos-resultado').innerHTML = `
-              <div class="error">Não há números suficientes no banco. Mínimo 10 números necessários.</div>
-            `;
-            return;
+          if (todosNumeros.length < dezenasPorJogo) {
+            throw new Error(`Não há números suficientes no banco para gerar ${dezenasPorJogo} dezenas.`);
           }
 
-          // Gerar 7 combinações diferentes de 10 números
-          const jogos = gerarCombinacoes(top10, todosNumeros, 7);
+          const jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, dezenasPorJogo);
 
-          // Mostrar resultados
           const resultado = document.getElementById('jogos-resultado');
           resultado.innerHTML = jogos
             .map(
               (jogo, i) => `
             <div class="jogo-card">
-              <div class="jogo-title">🎲 Jogo ${i + 1}${i === 0 ? ' (Top 10)' : ''}</div>
+              <div class="jogo-title">🎲 Jogo ${i + 1}${i === 0 ? ' (Top)' : ''}</div>
               <div class="numeros-jogo">
                 ${jogo.map((num) => `<div class="numero-badge">${num}</div>`).join('')}
               </div>
@@ -1268,16 +1300,14 @@
             )
             .join('');
 
-          // Adicionar botão de exportação
           resultado.innerHTML += `
             <button class="btn btn-primary" onclick="exportarJogos()">
               Exportar como CSV
             </button>
           `;
 
-          // Armazenar jogos no localStorage para exportação
           window.jogosGerados = jogos;
-          jogosGeradosCache = jogos; // Salvar na cache global
+          window.jogosGeradosCache = jogos;
         } catch (error) {
           console.error('Erro:', error);
           document.getElementById('jogos-resultado').innerHTML = `
@@ -1286,19 +1316,37 @@
         }
       }
 
-      // Gerar combinações únicas e variadas
-      function gerarCombinacoes(top10, todosNumeros, quantidade) {
+      function gerarCombinacoes(top10, todosNumeros, quantidade, dezenasPorJogo) {
         const jogos = [];
 
-        // Jogo 1: Top 10 números ordenados
-        jogos.push([...top10].sort((a, b) => a - b));
+        const baseTop = top10.slice(0, dezenasPorJogo);
+        let primeiroJogo = [...new Set(baseTop)];
 
-        // Jogos 2-7: Embaralhar todos os números disponíveis
+        if (primeiroJogo.length < dezenasPorJogo) {
+          const restantes = todosNumeros.filter((num) => !primeiroJogo.includes(num));
+          primeiroJogo = [...primeiroJogo, ...restantes.slice(0, dezenasPorJogo - primeiroJogo.length)];
+        }
+
+        jogos.push([...new Set(primeiroJogo)].sort((a, b) => a - b));
+
+        const vistos = new Set([jogos[0].join(',')]);
+        let attempts = 0;
+
         for (let i = 1; i < quantidade; i++) {
-          // Embaralhar todos os números (incluindo top 10 e demais)
-          const embaralhado = [...todosNumeros].sort(() => Math.random() - 0.5);
-          // Pegar os primeiros 10 números do embaralhamento
-          const jogo = embaralhado.slice(0, 10).sort((a, b) => a - b);
+          attempts = 0;
+          let jogo;
+
+          do {
+            const embaralhado = [...todosNumeros].sort(() => Math.random() - 0.5);
+            jogo = embaralhado.slice(0, dezenasPorJogo).sort((a, b) => a - b);
+            attempts += 1;
+          } while (vistos.has(jogo.join(',')) && attempts < 50);
+
+          if (vistos.has(jogo.join(','))) {
+            break;
+          }
+
+          vistos.add(jogo.join(','));
           jogos.push(jogo);
         }
 
@@ -1677,6 +1725,50 @@
         } catch (error) {
           console.error('Erro:', error);
           alert('❌ Erro ao zerar banco: ' + error.message);
+        }
+      }
+
+      async function resetParticipants() {
+        const confirmCode = prompt(
+          'Para zerar todos os participantes e volantes, digite ZERAR_PARTICIPANTES:'
+        );
+
+        if (confirmCode !== 'ZERAR_PARTICIPANTES') {
+          alert('⚠️ Código incorreto. Ação cancelada.');
+          return;
+        }
+
+        const doubleConfirm = confirm(
+          '⚠️ Esta ação irá remover TODOS os participantes/volantes.\n\nDeseja continuar?'
+        );
+
+        if (!doubleConfirm) {
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem('admin-token');
+          const response = await fetch('/api/admin/reset-volantes', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ confirmCode })
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error);
+          }
+
+          const data = await response.json();
+          alert('✅ ' + data.message);
+          carregarEstatisticas();
+          carregarParticipantes();
+        } catch (error) {
+          console.error('Erro:', error);
+          alert('❌ Erro ao zerar participantes: ' + (error.message || error));
         }
       }
 

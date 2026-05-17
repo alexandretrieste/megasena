@@ -18,15 +18,19 @@ ON CONFLICT (key) DO NOTHING;
 -- Enable Row Level Security
 ALTER TABLE system_config ENABLE ROW LEVEL SECURITY;
 
--- Policy: Admin pode ler
-CREATE POLICY "Admin can view config"
-ON system_config FOR SELECT
-USING (true);
+-- Remove permissive policies (if present) and create admin-only policies
+DROP POLICY IF EXISTS "Admin can view config" ON system_config;
+DROP POLICY IF EXISTS "Admin can update config" ON system_config;
 
--- Policy: Admin pode atualizar
-CREATE POLICY "Admin can update config"
+-- Policy: Apenas usuários com claim JWT `role = 'admin'` podem visualizar
+CREATE POLICY "Admins can view config"
+ON system_config FOR SELECT
+USING (current_setting('jwt.claims.role', true) = 'admin');
+
+-- Policy: Apenas usuários com claim JWT `role = 'admin'` podem atualizar
+CREATE POLICY "Admins can update config"
 ON system_config FOR UPDATE
-USING (true);
+USING (current_setting('jwt.claims.role', true) = 'admin');
 
 -- Criar índice para melhor performance
 CREATE INDEX IF NOT EXISTS idx_system_config_key ON system_config(key);

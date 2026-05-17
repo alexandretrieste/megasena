@@ -23,6 +23,24 @@ INSERT INTO system_config (key, value)
 VALUES ('accept_new_entries', true)
 ON CONFLICT (key) DO NOTHING;
 
+-- Enable Row Level Security for `system_config` and restrict access
+-- Notes: do NOT create public policies for this table. Prefer using
+-- the service_role key from the server, or a JWT with claim role='admin'.
+ALTER TABLE system_config ENABLE ROW LEVEL SECURITY;
+
+-- Remove any existing permissive policies (safe-guard when applying seed)
+DROP POLICY IF EXISTS "Admin can view config" ON system_config;
+DROP POLICY IF EXISTS "Admin can update config" ON system_config;
+
+-- Admin-only policies: allow SELECT/UPDATE only when JWT has claim role='admin'
+CREATE POLICY "Admins can view config"
+ON system_config FOR SELECT
+USING (current_setting('jwt.claims.role', true) = 'admin');
+
+CREATE POLICY "Admins can update config"
+ON system_config FOR UPDATE
+USING (current_setting('jwt.claims.role', true) = 'admin');
+
 CREATE INDEX IF NOT EXISTS idx_volantes_cpf ON volantes(cpf);
 CREATE INDEX IF NOT EXISTS idx_volantes_timestamp ON volantes(timestamp);
 

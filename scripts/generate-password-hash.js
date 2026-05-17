@@ -7,6 +7,15 @@
 
 const crypto = require('crypto');
 
+function validatePassword(password) {
+  const lengthValid = password.length >= 12;
+  const upperValid = /[A-Z]/.test(password);
+  const lowerValid = /[a-z]/.test(password);
+  const digitValid = /[0-9]/.test(password);
+  const specialValid = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+  return lengthValid && upperValid && lowerValid && digitValid && specialValid;
+}
+
 function generatePasswordHash(password) {
   if (!password) {
     console.error('❌ Erro: Forneça uma senha como argumento');
@@ -14,8 +23,8 @@ function generatePasswordHash(password) {
     process.exit(1);
   }
 
-  if (password.length < 12) {
-    console.error('❌ Erro: A senha deve ter no mínimo 12 caracteres');
+  if (!validatePassword(password)) {
+    console.error('❌ Erro: A senha deve ter no mínimo 12 caracteres e incluir letras maiúsculas, minúsculas, números e caracteres especiais');
     process.exit(1);
   }
 
