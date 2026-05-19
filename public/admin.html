@@ -116,22 +116,6 @@
         font-size: 14px;
       }
 
-      .numero-badge.match {
-        background: #28a745;
-        color: white;
-        box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
-      }
-
-      .jogo-acertos {
-        margin-top: 0.75rem;
-        font-weight: 600;
-        color: #0d3b66;
-      }
-
-      .jogo-acertos span {
-        color: #28a745;
-      }
-
       .btn-group {
         display: flex;
         gap: 10px;
@@ -703,19 +687,7 @@
 
               <!-- Resultados oficiais -->
               <div id="resultado-loteria" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #ddd;">
-                <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                  <div>
-                    <h3 style="margin-top: 0; color: #0d3b66;">🎟️ Resultado Oficial Mega-Sena</h3>
-                    <p style="margin: 0.25rem 0 0; color: #666;">Digite o concurso para buscar o resultado oficial. Se ainda não existir, apresentaremos a mensagem de não apurado.</p>
-                  </div>
-                  <div style="display: grid; gap: 0.75rem; max-width: 240px; width: 100%;">
-                    <label style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem;">
-                      Concurso (até 4 dígitos)
-                      <input id="concurso-loteria" type="text" maxlength="4" pattern="\d*" placeholder="Ex: 2534" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
-                    </label>
-                    <button class="btn btn-primary" onclick="carregarRelatorio()" style="width: 100%;">Buscar Concurso</button>
-                  </div>
-                </div>
+                <h3 style="margin-top: 0; color: #0d3b66;">🎟️ Resultado Oficial Mega-Sena</h3>
                 <div id="resultado-loteria-conteudo" style="color: #333;">Carregando resultado oficial...</div>
               </div>
 
@@ -1464,107 +1436,30 @@
               `${maisPopular.number} (${maisPopular.count}x)`;
           }
 
-          const concursoInput = document.getElementById('concurso-loteria');
-          const concursoValue = concursoInput?.value.trim();
-          const concursoQuery = /^\d{1,4}$/.test(concursoValue) ? concursoValue : '';
-
           // Carregar resultado oficial da Mega-Sena
           const resultadoLoteria = document.getElementById('resultado-loteria-conteudo');
-          if (concursoValue && !concursoQuery) {
-            resultadoLoteria.innerHTML = `
-              <div class="error">Concurso inválido. Use até 4 dígitos numéricos.</div>
-            `;
-            return;
-          }
-
-          let numerosOficiais = [];
-          let concursoOficial = 'Último concurso';
-          let dataFormatada = 'Data não disponível';
-          let resultadoEncontrado = false;
-
           try {
-            const endpoint = concursoQuery ? `/api/lottery-results?concurso=${encodeURIComponent(concursoQuery)}` : '/api/lottery-results';
-            const responseLoteria = await fetch(endpoint);
-            const oficial = await responseLoteria.json();
-
+            const responseLoteria = await fetch('/api/lottery-results');
             if (!responseLoteria.ok) {
-              throw new Error(oficial?.error || 'Não foi possível buscar o resultado oficial.');
+              throw new Error('Não foi possível buscar o resultado oficial.');
             }
+            const oficial = await responseLoteria.json();
+            const numerosOficiais = oficial.numeros?.join(', ') || oficial.resultado?.join(', ') || 'N/A';
+            const concursoOficial = oficial.concurso || oficial.numero || oficial.id || 'Último concurso';
+            const dataSorteio = oficial.data || oficial.data_sorteio || oficial.dia || null;
+            const dataFormatada = dataSorteio ? new Date(dataSorteio).toLocaleDateString('pt-BR') : 'Data não disponível';
 
-            numerosOficiais = oficial.resultado || oficial.numeros || oficial.dezenas || oficial.lista || [];
-            concursoOficial = oficial.concurso || oficial.numero || oficial.id || concursoOficial;
-            const dataSorteio = oficial.data || oficial.data_sorteio || oficial.dia || oficial.dataProva || null;
-            dataFormatada = dataSorteio ? new Date(dataSorteio).toLocaleDateString('pt-BR') : dataFormatada;
-
-            if (!Array.isArray(numerosOficiais) || numerosOficiais.length === 0) {
-              resultadoLoteria.innerHTML = `
-                <div class="error">Resultado do concurso ${concursoQuery || 'mais recente'} ainda não apurado.</div>
-              `;
-            } else {
-              resultadoEncontrado = true;
-              resultadoLoteria.innerHTML = `
-                <p style="margin: 0.2rem 0; font-weight: 600;">Concurso: ${concursoOficial}</p>
-                <p style="margin: 0.2rem 0;">Data do sorteio: ${dataFormatada}</p>
-                <p style="margin: 0.2rem 0;">Números sorteados: <strong>${numerosOficiais.join(', ')}</strong></p>
-              `;
-            }
+            resultadoLoteria.innerHTML = `
+              <p style="margin: 0.2rem 0; font-weight: 600;">Concurso: ${concursoOficial}</p>
+              <p style="margin: 0.2rem 0;">Data do sorteio: ${dataFormatada}</p>
+              <p style="margin: 0.2rem 0;">Números sorteados: <strong>${numerosOficiais}</strong></p>
+            `;
           } catch (fetchError) {
             console.error('Erro ao carregar resultado oficial:', fetchError);
             resultadoLoteria.innerHTML = `
               <div class="error">Não foi possível obter o resultado oficial da Mega-Sena.</div>
             `;
           }
-
-          const todosNumeros = Array.from(numerosUnicos);
-          const top10 = data.topNumbers.slice(0, 10).map((n) => n.number);
-          let jogos;
-
-          if (
-            jogosGeradosCache &&
-            jogosGeradosCache.quantidade === quantidadeJogos &&
-            jogosGeradosCache.dezenas === dezenasPorJogo
-          ) {
-            jogos = jogosGeradosCache.jogos;
-          } else {
-            jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, dezenasPorJogo);
-            jogosGeradosCache = {
-              jogos,
-              quantidade: quantidadeJogos,
-              dezenas: dezenasPorJogo,
-            };
-          }
-
-          const jogosContainer = document.getElementById('relatorio-jogos-sugeridos');
-          jogosContainer.innerHTML = jogos
-            .map((jogo, i) => {
-              const acertos = resultadoEncontrado
-                ? jogo.filter((num) => numerosOficiais.includes(num)).length
-                : 0;
-
-              return `
-                <div class="jogo-card">
-                  <div class="jogo-title">🎲 Jogo ${i + 1}${i === 0 ? ' (Top 10 Números)' : ''}</div>
-                  <div class="numeros-jogo">
-                    ${jogo
-                      .map(
-                        (num) => `
-                          <div class="numero-badge ${resultadoEncontrado && numerosOficiais.includes(num) ? 'match' : ''}">${num}</div>
-                        `
-                      )
-                      .join('')}
-                  </div>
-                  ${resultadoEncontrado ? `<div class="jogo-acertos">Acertos: <span>${acertos}</span> de ${jogo.length}</div>` : ''}
-                </div>
-              `;
-            })
-            .join('');
-
-        } catch (error) {
-          console.error('Erro ao carregar relatório:', error);
-          document.getElementById('relatorio-conteudo').innerHTML = `
-            <div class="error">Erro ao carregar relatório: ${error.message}</div>
-          `;
-        }
 
           // Top 10 números em grid
           const topNumerosContainer = document.getElementById('relatorio-top-numeros');
