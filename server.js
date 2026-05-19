@@ -164,12 +164,20 @@ app.get('/api/volantes/list', async (_req, res) => {
 });
 
 // Proxy para buscar resultado oficial da Mega-Sena de API externa
-app.get('/api/lottery-results', async (_req, res) => {
+app.get('/api/lottery-results', async (req, res) => {
   try {
-    const data = await fetchJson('https://api.guidi.dev.br/loteria/megasena/ultimo');
+    const concurso = req.query.concurso;
+    const endpoint = concurso && /^\d{1,4}$/.test(concurso)
+      ? `https://api.guidi.dev.br/loteria/megasena/${encodeURIComponent(concurso)}`
+      : 'https://api.guidi.dev.br/loteria/megasena/ultimo';
+
+    const data = await fetchJson(endpoint);
     res.json(data);
   } catch (error) {
     console.error('Erro ao consultar API externa de loteria:', error);
+    if (error.message && error.message.includes('404')) {
+      return res.status(404).json({ error: 'Resultado do concurso não encontrado ou ainda não apurado.' });
+    }
     res.status(502).json({ error: 'Erro ao consultar resultados oficiais da Mega-Sena.' });
   }
 });
