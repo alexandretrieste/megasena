@@ -685,9 +685,15 @@
                 <div class="stats-grid" id="relatorio-top-numeros"></div>
               </div>
 
+              <!-- Resultados oficiais -->
+              <div id="resultado-loteria" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #ddd;">
+                <h3 style="margin-top: 0; color: #0d3b66;">🎟️ Resultado Oficial Mega-Sena</h3>
+                <div id="resultado-loteria-conteudo" style="color: #333;">Carregando resultado oficial...</div>
+              </div>
+
               <!-- Jogos sugeridos -->
               <div>
-                <h3 style="color: #0d3b66;">🎲 7 Jogos Sugeridos (10 números cada)</h3>
+                <h3 id="relatorio-jogos-titulo" style="color: #0d3b66;"></h3>
                 <div id="relatorio-jogos-sugeridos"></div>
               </div>
             </div>
@@ -1307,7 +1313,11 @@
           `;
 
           window.jogosGerados = jogos;
-          window.jogosGeradosCache = jogos;
+          window.jogosGeradosCache = {
+            jogos,
+            quantidade: quantidadeJogos,
+            dezenas: dezenasPorJogo,
+          };
         } catch (error) {
           console.error('Erro:', error);
           document.getElementById('jogos-resultado').innerHTML = `
@@ -1395,9 +1405,15 @@
 
           if (!response.ok) throw new Error('Erro ao carregar dados');
 
+          const dezenasPorJogo = Number(document.getElementById('dezenas-por-jogo').value) || 10;
+          const quantidadeJogos = Number(document.getElementById('quantidade-jogos').value) || 7;
+
           // Data do relatório
           document.getElementById('data-relatorio').textContent = 
             `Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
+
+          document.getElementById('relatorio-jogos-titulo').textContent =
+            `🎲 ${quantidadeJogos} Jogos Sugeridos (${dezenasPorJogo} números cada)`;
 
           // Métricas principais
           document.getElementById('relatorio-total-participantes').textContent = data.totalVolantes;
@@ -1418,6 +1434,31 @@
             const maisPopular = data.topNumbers[0];
             document.getElementById('relatorio-numero-popular').textContent = 
               `${maisPopular.number} (${maisPopular.count}x)`;
+          }
+
+          // Carregar resultado oficial da Mega-Sena
+          const resultadoLoteria = document.getElementById('resultado-loteria-conteudo');
+          try {
+            const responseLoteria = await fetch('/api/lottery-results');
+            if (!responseLoteria.ok) {
+              throw new Error('Não foi possível buscar o resultado oficial.');
+            }
+            const oficial = await responseLoteria.json();
+            const numerosOficiais = oficial.numeros?.join(', ') || oficial.resultado?.join(', ') || 'N/A';
+            const concursoOficial = oficial.concurso || oficial.numero || oficial.id || 'Último concurso';
+            const dataSorteio = oficial.data || oficial.data_sorteio || oficial.dia || null;
+            const dataFormatada = dataSorteio ? new Date(dataSorteio).toLocaleDateString('pt-BR') : 'Data não disponível';
+
+            resultadoLoteria.innerHTML = `
+              <p style="margin: 0.2rem 0; font-weight: 600;">Concurso: ${concursoOficial}</p>
+              <p style="margin: 0.2rem 0;">Data do sorteio: ${dataFormatada}</p>
+              <p style="margin: 0.2rem 0;">Números sorteados: <strong>${numerosOficiais}</strong></p>
+            `;
+          } catch (fetchError) {
+            console.error('Erro ao carregar resultado oficial:', fetchError);
+            resultadoLoteria.innerHTML = `
+              <div class="error">Não foi possível obter o resultado oficial da Mega-Sena.</div>
+            `;
           }
 
           // Top 10 números em grid
@@ -1546,20 +1587,23 @@
           });
 
           let jogos;
-          
-          // Se já tiver jogos gerados, usar eles. Senão, gerar novos
-          if (jogosGeradosCache && jogosGeradosCache.length === 7) {
-            jogos = jogosGeradosCache;
+          const todosNumeros = Array.from(numerosUnicos);
+          const top10 = data.topNumbers.slice(0, 10).map((n) => n.number);
+
+          // Se já tivermos jogos na cache com a mesma configuração, reutiliza
+          if (
+            jogosGeradosCache &&
+            jogosGeradosCache.quantidade === quantidadeJogos &&
+            jogosGeradosCache.dezenas === dezenasPorJogo
+          ) {
+            jogos = jogosGeradosCache.jogos;
           } else {
-            // Buscar TODOS os números sugeridos do banco
-            const todosNumeros = Array.from(numerosUnicos);
-            
-            // Top 10 para primeiro jogo
-            const top10 = data.topNumbers.slice(0, 10).map((n) => n.number);
-            
-            // Gerar 7 jogos sugeridos
-            jogos = gerarCombinacoes(top10, todosNumeros, 7);
-            jogosGeradosCache = jogos; // Salvar na cache
+            jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, dezenasPorJogo);
+            jogosGeradosCache = {
+              jogos,
+              quantidade: quantidadeJogos,
+              dezenas: dezenasPorJogo,
+            };
           }
 
           const jogosContainer = document.getElementById('relatorio-jogos-sugeridos');

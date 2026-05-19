@@ -1,10 +1,31 @@
 require('dotenv').config();
 const express = require('express');
+const https = require('https');
 const path = require('path');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { registerVolante, getStats } = require('./lib/volanteService');
 const supabase = require('./lib/supabaseClient');
+
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'MegaSenaAdmin/1.0' } }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => (body += chunk));
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (res.statusCode >= 400) {
+            return reject(new Error(data?.message || `HTTP ${res.statusCode}`));
+          }
+          resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }).on('error', reject);
+  });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -139,6 +160,17 @@ app.get('/api/volantes/list', async (_req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao listar volantes.' });
+  }
+});
+
+// Proxy para buscar resultado oficial da Mega-Sena de API externa
+app.get('/api/lottery-results', async (_req, res) => {
+  try {
+    const data = await fetchJson('https://api.guidi.dev.br/loteria/megasena/ultimo');
+    res.json(data);
+  } catch (error) {
+    console.error('Erro ao consultar API externa de loteria:', error);
+    res.status(502).json({ error: 'Erro ao consultar resultados oficiais da Mega-Sena.' });
   }
 });
 
