@@ -177,7 +177,6 @@
               required
               minlength="12"
               autocomplete="current-password"
-              autocapitalize="none"
               autocorrect="off"
               inputmode="text"
             />
@@ -185,7 +184,7 @@
           </div>
 
           <div class="form-group">
-            <button type="button" id="login-btn">Acessar Painel</button>
+            <button type="submit" id="login-btn">Acessar Painel</button>
           </div>
         </form>
       </div>
@@ -318,13 +317,24 @@
         successMessage.classList.remove('show');
 
         try {
-          const response = await fetch('/api/admin/verify-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password }),
-          });
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          let response;
+          let data;
 
-          const data = await response.json();
+          try {
+            response = await fetch('/api/admin/verify-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              cache: 'no-store',
+              body: JSON.stringify({ password }),
+              signal: controller.signal,
+            });
+            const text = await response.text();
+            data = text ? JSON.parse(text) : {};
+          } finally {
+            clearTimeout(timeoutId);
+          }
 
           if (response.ok && data.success) {
             try {
@@ -335,9 +345,7 @@
               return;
             }
             showSuccess('Acesso concedido! Redirecionando...');
-            setTimeout(() => {
-              window.location.assign('/admin.html');
-            }, 1000);
+            window.location.replace('/admin.html');
           } else {
             showError(data.error || 'Senha incorreta.');
             passwordInput.focus();
@@ -351,7 +359,6 @@
         }
       }
 
-      loginBtn.addEventListener('click', handleLogin);
       loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         handleLogin();
