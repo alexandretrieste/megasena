@@ -858,14 +858,9 @@
 
       async function checkAuthentication() {
         const token = localStorage.getItem('admin-token');
-        if (!token) {
-          window.location.href = '/login.html';
-          return false;
-        }
-
         try {
           const response = await fetch('/api/admin/verify-token', {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           });
 
           if (!response.ok) {
