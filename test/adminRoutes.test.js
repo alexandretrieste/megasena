@@ -36,6 +36,18 @@ test('a listagem com CPF exige autenticação administrativa', async () => {
   assert.equal(response.status, 401);
 });
 
+test('frequência histórica usa o snapshot local dos últimos 100 concursos', async () => {
+  const response = await fetch(`${baseUrl}/api/lottery-results/frequency`);
+  assert.equal(response.status, 200);
+
+  const history = await response.json();
+  assert.equal(history.drawCount, 100);
+  assert.equal(history.firstContest, history.lastContest - 99);
+  assert.ok(history.lastContest >= 3089);
+  assert.equal(history.frequencies.length, 60);
+  assert.equal(history.frequencies.reduce((sum, item) => sum + item.count, 0), 600);
+});
+
 test('login administrativo valida senha e emite token utilizável', async () => {
   const invalidLoginResponse = await fetch(`${baseUrl}/api/admin/verify-password`, {
     method: 'POST',

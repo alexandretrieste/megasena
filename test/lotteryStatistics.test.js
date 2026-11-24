@@ -2,9 +2,10 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   buildHistoricalFrequency,
-  loadRecentDrawFrequencies,
+  parseHistoricalCsv,
 } = require('../lib/lotteryStatistics');
 const { generateSuggestedGames } = require('../public/lotterySuggestions');
+const historicalSnapshot = require('../lib/megasena-last-100.json');
 
 test('calcula frequência dos concursos oficiais e inclui dezenas sem ocorrência', () => {
   const stats = buildHistoricalFrequency([
@@ -30,22 +31,44 @@ test('rejeita resultados de concurso incompletos ou inválidos', () => {
   );
 });
 
-test('carrega e agrega exatamente os 100 concursos mais recentes em lotes limitados', async () => {
-  const requestedContests = [];
-  const latestDraw = { numero: 200, listaDezenas: ['1', '2', '3', '4', '5', '6'] };
-  const stats = await loadRecentDrawFrequencies(async (url) => {
-    const contest = Number(url.split('/').pop());
-    requestedContests.push(contest);
-    return { numero: contest, listaDezenas: ['1', '2', '3', '4', '5', '6'] };
-  }, latestDraw);
+test('interpreta frequência recente diretamente de um CSV consolidado', () => {
+  const csv = [
+    'Concurso,Data do Sorteio,Bola1,Bola2,Bola3,Bola4,Bola5,Bola6,Observação',
+    '100,01/01/2026,1,2,3,4,5,6,"texto, com vírgula"',
+    '101,02/01/2026,1,2,7,8,9,10,ok',
+  ].join('\n');
 
-  assert.equal(requestedContests.length, 99);
-  assert.equal(Math.max(...requestedContests), 199);
-  assert.equal(Math.min(...requestedContests), 101);
+  const stats = parseHistoricalCsv(csv, 2);
+
+  assert.equal(stats.drawCount, 2);
+  assert.equal(stats.firstContest, 100);
+  assert.equal(stats.lastContest, 101);
+  assert.equal(stats.frequencies.find(({ number }) => number === 1).count, 2);
+});
+
+test('snapshot versionado contém exatamente os 100 concursos mais recentes validados', () => {
+  const stats = buildHistoricalFrequency(historicalSnapshot.draws);
+
+  assert.equal(historicalSnapshot.drawCount, 100);
   assert.equal(stats.drawCount, 100);
-  assert.equal(stats.firstContest, 101);
-  assert.equal(stats.lastContest, 200);
-  assert.equal(stats.frequencies.find(({ number }) => number === 1).count, 100);
+  assert.equal(stats.firstContest, 2990);
+  assert.equal(stats.lastContest, 3089);
+  assert.deepEqual(historicalSnapshot.draws.at(-1).listaDezenas, ['17', '18', '27', '36', '58', '59']);
+});
+
+test('rejeita CSV com lacunas ou esquema inesperado', () => {
+  assert.throws(
+    () => parseHistoricalCsv('Concurso,Bola1\n1,1', 1),
+    /formato inesperado/,
+  );
+  assert.throws(
+    () => parseHistoricalCsv([
+      'Concurso,Bola1,Bola2,Bola3,Bola4,Bola5,Bola6',
+      '100,1,2,3,4,5,6',
+      '102,1,2,3,4,5,6',
+    ].join('\n'), 2),
+    /lacunas/,
+  );
 });
 
 test('gera jogos ponderados com dezenas distintas e sem sequências de quatro números', () => {

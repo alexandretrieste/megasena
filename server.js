@@ -6,8 +6,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { rateLimit } = require('express-rate-limit');
 const { registerVolante, getStats } = require('./lib/volanteService');
-const { loadRecentDrawFrequencies } = require('./lib/lotteryStatistics');
+const { buildHistoricalFrequency, parseHistoricalCsv } = require('./lib/lotteryStatistics');
 const supabase = require('./lib/supabaseClient');
+const historicalSnapshot = require('./lib/megasena-last-100.json');
 
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
@@ -31,21 +32,51 @@ function fetchJson(url) {
   });
 }
 
+function fetchText(url) {
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, { headers: { 'User-Agent': 'MegaSenaAdmin/1.0' } }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => (body += chunk));
+      res.on('end', () => {
+        if (res.statusCode >= 400) {
+          return reject(new Error(`HTTP ${res.statusCode} ao baixar o histórico de resultados.`));
+        }
+        resolve(body);
+      });
+    });
+    request.setTimeout(15000, () => request.destroy(new Error('Tempo limite ao atualizar o histórico oficial.')));
+    request.on('error', reject);
+  });
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HISTORICAL_DRAW_COUNT = 100;
 const HISTORICAL_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-let historicalFrequencyCache = null;
-let historicalFrequencyCacheAt = 0;
+const HISTORICAL_CSV_URL = 'https://raw.githubusercontent.com/aretw0/loterias-caixa-db/main/data/megasena.csv';
+let historicalFrequencyCache = {
+  ...buildHistoricalFrequency(historicalSnapshot.draws),
+  source: historicalSnapshot.source,
+  updatedAt: historicalSnapshot.generatedAt,
+  stale: false,
+};
+let historicalFrequencyCacheAt = Date.parse(historicalSnapshot.generatedAt);
 let historicalFrequencyRequest = null;
 
 async function loadHistoricalFrequency() {
-  const latest = await fetchJson('https://api.guidi.dev.br/loteria/megasena/ultimo');
-  if (!Number.isInteger(latest.numero) || latest.numero < HISTORICAL_DRAW_COUNT) {
-    throw new Error('A API de resultados retornou um concurso inválido.');
+  const csv = await fetchText(HISTORICAL_CSV_URL);
+  const stats = parseHistoricalCsv(csv, HISTORICAL_DRAW_COUNT);
+  if (stats.lastContest < historicalFrequencyCache.lastContest) {
+    throw new Error('A fonte de resultados está mais desatualizada que o histórico local.');
   }
 
-  return loadRecentDrawFrequencies(fetchJson, latest, HISTORICAL_DRAW_COUNT);
+  return {
+    ...stats,
+    source: HISTORICAL_CSV_URL,
+    updatedAt: new Date().toISOString(),
+    stale: false,
+  };
 }
 
 async function getHistoricalFrequency() {
@@ -62,6 +93,12 @@ async function getHistoricalFrequency() {
         historicalFrequencyCache = stats;
         historicalFrequencyCacheAt = Date.now();
         return stats;
+      })
+      .catch((error) => {
+        console.warn('Não foi possível atualizar o histórico; mantendo o snapshot local:', error);
+        historicalFrequencyCache = { ...historicalFrequencyCache, stale: true };
+        historicalFrequencyCacheAt = Date.now();
+        return historicalFrequencyCache;
       })
       .finally(() => {
         historicalFrequencyRequest = null;
@@ -278,7 +315,7 @@ app.get('/api/lottery-results/frequency', async (_req, res) => {
     res.json(stats);
   } catch (error) {
     console.error('Erro ao calcular frequência histórica da Mega-Sena:', error);
-    res.status(502).json({ error: 'Não foi possível carregar o histórico dos últimos 100 concursos.' });
+    res.status(500).json({ error: 'Não foi possível carregar o snapshot local do histórico.' });
   }
 });
 

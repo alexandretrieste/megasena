@@ -132,9 +132,11 @@ Obter estatísticas dos números mais escolhidos
 ```
 
 ### GET /api/lottery-results/frequency
-Obter a frequência de cada dezena nos 100 concursos oficiais mais recentes. O resultado é armazenado em cache por sete dias.
+Obter a frequência de cada dezena nos 100 concursos oficiais mais recentes. O servidor inclui um snapshot local válido como fallback e tenta atualizar a partir de um CSV público uma vez a cada sete dias, com uma única requisição em vez de consultar cada concurso separadamente.
 
-As sugestões do painel administrativo usam essas frequências como ponderação e evitam sequências de quatro ou mais dezenas consecutivas por preferência visual. Frequências anteriores não preveem os próximos resultados: cada combinação simples de seis dezenas tem a mesma probabilidade.
+As sugestões do painel administrativo usam essas frequências como ponderação e evitam sequências de quatro ou mais dezenas consecutivas por preferência visual. Se a atualização externa falhar, o endpoint retorna o snapshot local e indica `"stale": true`. Frequências anteriores não preveem os próximos resultados: cada combinação simples de seis dezenas tem a mesma probabilidade.
+
+Fonte do snapshot incluído: [aretw0/loterias-caixa-db](https://github.com/aretw0/loterias-caixa-db), atualizado a partir dos resultados oficiais da Caixa.
 
 **Response:**
 ```json

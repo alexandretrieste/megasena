@@ -15,9 +15,10 @@
   }
 
   function drawWeightedNumbers(frequencies, count, random) {
+    const averageFrequency = frequencies.reduce((sum, item) => sum + item.count, 0) / frequencies.length;
     const available = frequencies.map(({ number, count: frequency }) => ({
       number,
-      weight: frequency + 1,
+      weight: 1 + frequency / averageFrequency,
     }));
     const selected = [];
 
@@ -50,6 +51,9 @@
       || new Set(frequencies.map(({ number }) => number)).size !== 60
     ) {
       throw new Error('Frequências históricas inválidas.');
+    }
+    if (frequencies.reduce((sum, item) => sum + item.count, 0) === 0) {
+      throw new Error('As frequências históricas não contêm resultados.');
     }
 
     if (

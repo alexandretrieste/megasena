@@ -497,7 +497,7 @@
               </div>
               <div id="quantidades-jogos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; width: 100%; max-width: 560px;"></div>
             </div>
-            <p style="color: #555; max-width: 760px;">
+            <p id="jogos-nota-historico" style="color: #555; max-width: 760px;">
               Sugestões ponderadas pela frequência dos últimos 100 concursos oficiais. Frequências passadas não preveem resultados futuros; cada combinação simples de 6 dezenas tem a mesma probabilidade. Sequências de 4 ou mais dezenas são evitadas apenas por preferência visual.
             </p>
             <div class="btn-group">
@@ -1336,6 +1336,13 @@
           .filter((quantidade) => Number.isInteger(quantidade) && quantidade >= 6 && quantidade <= 20);
       }
 
+      function formatarNotaFrequenciaHistorica(historico) {
+        const alertaAtualizacao = historico.stale
+          ? ' A atualização automática falhou; usando o snapshot local.'
+          : '';
+        return `Frequências dos concursos ${historico.firstContest} a ${historico.lastContest} (${historico.drawCount} concursos). Frequências passadas não preveem resultados futuros; cada combinação simples de 6 dezenas tem a mesma probabilidade. Sequências de 4 ou mais dezenas são evitadas apenas por preferência visual.${alertaAtualizacao}`;
+      }
+
       async function gerarJogos() {
         try {
           const quantidadesPorJogo = lerQuantidadesPorJogo();
@@ -1354,6 +1361,8 @@
           if (!responseFrequency.ok) {
             throw new Error(historicalData.error || 'Erro ao carregar frequências históricas.');
           }
+          document.getElementById('jogos-nota-historico').textContent =
+            formatarNotaFrequenciaHistorica(historicalData);
 
           const jogos = LotterySuggestions.generateSuggestedGames(
             historicalData.frequencies,
@@ -1640,7 +1649,7 @@
             quantidadesPorJogo,
           );
           document.getElementById('relatorio-jogos-nota').textContent =
-            `Frequências dos concursos ${historicalData.firstContest} a ${historicalData.lastContest} (${historicalData.drawCount} concursos). Frequências passadas não preveem resultados futuros; cada combinação simples de 6 dezenas tem a mesma probabilidade. Sequências de 4 ou mais dezenas são evitadas apenas por preferência visual.`;
+            formatarNotaFrequenciaHistorica(historicalData);
 
           const jogosContainer = document.getElementById('relatorio-jogos-sugeridos');
           jogosContainer.innerHTML = jogos
