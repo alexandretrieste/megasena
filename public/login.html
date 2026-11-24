@@ -347,7 +347,11 @@
             showSuccess('Acesso concedido! Redirecionando...');
             window.location.replace('/admin.html');
           } else {
-            showError(data.error || 'Senha incorreta.');
+            showError(
+              response.status === 429
+                ? 'Muitas tentativas nesta rede. Aguarde 15 minutos ou tente em outra rede.'
+                : (data.error || 'Senha incorreta.')
+            );
             passwordInput.focus();
           }
         } catch (error) {
