@@ -490,15 +490,11 @@
             <div class="btn-group" style="flex-wrap: wrap; gap: 0.75rem;">
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; width: 100%; max-width: 560px;">
                 <label style="display: flex; flex-direction: column; gap: 0.25rem;">
-                  Quantas dezenas em cada jogo?
-                  <input type="text" id="quantidades-jogos" value="6, 7, 8, 9, 10" placeholder="Ex.: 6, 7, 10" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
-                  <small>Separe quantidades diferentes por vírgula (6 a 20).</small>
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 0.25rem;">
                   Quantos jogos gerar?
-                  <input type="number" id="quantidade-jogos" min="1" max="20" value="7" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
+                  <input type="number" id="quantidade-jogos" min="1" max="20" value="7" onchange="ajustarJogosPorQuantidade()" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
                 </label>
               </div>
+              <div id="quantidades-jogos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; width: 100%; max-width: 560px;"></div>
             </div>
             <div class="btn-group">
               <button class="btn btn-success" onclick="gerarJogos()">
@@ -966,6 +962,7 @@
       
       // Armazenar jogos gerados globalmente
       let jogosGeradosCache = null;
+      ajustarJogosPorQuantidade();
 
       function ofuscarCPF(cpf) {
         // Formato: ***.XXX.XXX-** (mostra apenas 6 dígitos do meio)
@@ -1263,26 +1260,58 @@
       }
 
       // Gerar jogos com número de dezenas e quantidade de jogos configuráveis
+      function ajustarJogosPorQuantidade() {
+        const quantidade = Number(document.getElementById('quantidade-jogos').value);
+        const container = document.getElementById('quantidades-jogos-container');
+        if (!container) return;
+
+        if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 20) return;
+
+        const existentes = [...container.querySelectorAll('select')].map((select) => Number(select.value));
+        container.innerHTML = '';
+
+        for (let i = 0; i < quantidade; i += 1) {
+          const label = document.createElement('label');
+          label.style.cssText = 'display:flex;flex-direction:column;gap:0.25rem';
+
+          const texto = document.createElement('span');
+          texto.textContent = `Jogo ${i + 1}:`;
+
+          const select = document.createElement('select');
+          select.className = 'dezenas-jogo';
+          select.setAttribute('aria-label', `Quantidade de dezenas do jogo ${i + 1}`);
+
+          for (let dezenas = 6; dezenas <= 20; dezenas += 1) {
+            const option = document.createElement('option');
+            option.value = String(dezenas);
+            option.textContent = `${dezenas} dezenas`;
+            select.appendChild(option);
+          }
+
+          select.value = String(existentes[i] || (i < 5 ? i + 6 : 10));
+          label.appendChild(texto);
+          label.appendChild(select);
+          container.appendChild(label);
+        }
+      }
+
+      function lerQuantidadesPorJogo() {
+        return [...document.querySelectorAll('.dezenas-jogo')]
+          .map((select) => Number(select.value))
+          .filter((quantidade) => Number.isInteger(quantidade) && quantidade >= 6 && quantidade <= 20);
+      }
+
       async function gerarJogos() {
         try {
-          const quantidadesTexto = document.getElementById('quantidades-jogos').value;
-          const quantidadesPorJogo = [...new Set(
-            quantidadesTexto.split(',')
-              .map((valor) => Number(valor.trim()))
-              .filter((valor) => Number.isInteger(valor) && valor >= 6 && valor <= 20)
-          )];
+          const quantidadesPorJogo = lerQuantidadesPorJogo();
           const quantidadeJogos = Number(document.getElementById('quantidade-jogos').value);
-
-          if (quantidadesPorJogo.length === 0) {
-            throw new Error('Informe quantidades entre 6 e 20 dezenas, separadas por vírgula.');
-          }
-
-          if (quantidadesPorJogo.length > quantidadeJogos) {
-            throw new Error('A quantidade de jogos deve cobrir todas as quantidades informadas.');
-          }
 
           if (!quantidadeJogos || quantidadeJogos < 1 || quantidadeJogos > 20) {
             throw new Error('Escolha entre 1 e 20 jogos.');
+          }
+
+          if (quantidadesPorJogo.length !== quantidadeJogos) {
+            throw new Error('Defina a quantidade de dezenas para cada jogo.');
           }
 
           const responseStats = await fetch('/api/stats/top-numbers');
@@ -1314,7 +1343,7 @@
             .map(
               (jogo, i) => `
             <div class="jogo-card">
-              <div class="jogo-title">🎲 Jogo ${i + 1}${i === 0 ? ' (Top)' : ''}</div>
+              <div class="jogo-title">🎲 Jogo ${i + 1} — ${jogo.length} dezenas${i === 0 ? ' (Top)' : ''}</div>
               <div class="numeros-jogo">
                 ${jogo.map((num) => `<div class="numero-badge">${num}</div>`).join('')}
               </div>
@@ -1394,9 +1423,9 @@
       function exportarJogos() {
         if (!window.jogosGerados) return;
 
-        let csv = 'Jogo,Números\n';
+        let csv = 'Jogo,Quantidade de dezenas,Números\n';
         window.jogosGerados.forEach((jogo, i) => {
-          csv += `Jogo ${i + 1},"${jogo.join(', ')}"\n`;
+          csv += `Jogo ${i + 1},${jogo.length},"${jogo.join(', ')}"\n`;
         });
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -1424,19 +1453,23 @@
 
           if (!response.ok) throw new Error('Erro ao carregar dados');
 
-          const quantidadesPorJogo = (document.getElementById('quantidades-jogos')?.value || '10')
-            .split(',')
-            .map((valor) => Number(valor.trim()))
-            .filter((valor) => Number.isInteger(valor) && valor >= 6 && valor <= 20);
+          const quantidadesPorJogo = lerQuantidadesPorJogo();
           const chaveQuantidades = quantidadesPorJogo.join(',');
           const quantidadeJogos = Number(document.getElementById('quantidade-jogos').value) || 7;
+
+          if (quantidadesPorJogo.length !== quantidadeJogos) {
+            ajustarJogosPorQuantidade();
+            quantidadesPorJogo.splice(0, quantidadesPorJogo.length, ...lerQuantidadesPorJogo());
+          }
+
+          const chaveQuantidadesAtualizada = quantidadesPorJogo.join(',');
 
           // Data do relatório
           document.getElementById('data-relatorio').textContent = 
             `Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
 
           document.getElementById('relatorio-jogos-titulo').textContent =
-            `🎲 ${quantidadeJogos} Jogos Sugeridos (${chaveQuantidades || '10'} números por jogo)`;
+            `🎲 ${quantidadeJogos} Jogos Sugeridos (${chaveQuantidadesAtualizada || '10'} números por jogo)`;
 
           // Métricas principais
           document.getElementById('relatorio-total-participantes').textContent = data.totalVolantes;
@@ -1612,12 +1645,19 @@
           let jogos;
           const todosNumeros = Array.from(numerosUnicos);
           const top10 = data.topNumbers.slice(0, 10).map((n) => n.number);
+          const maiorQuantidade = quantidadesPorJogo.length
+            ? Math.max(...quantidadesPorJogo)
+            : 10;
+
+          if (todosNumeros.length < maiorQuantidade) {
+            throw new Error(`Não há números distintos suficientes no banco para gerar ${maiorQuantidade} dezenas.`);
+          }
 
           // Se já tivermos jogos na cache com a mesma configuração, reutiliza
           if (
             jogosGeradosCache &&
             jogosGeradosCache.quantidade === quantidadeJogos &&
-            jogosGeradosCache.dezenas === chaveQuantidades
+            jogosGeradosCache.dezenas === chaveQuantidadesAtualizada
           ) {
             jogos = jogosGeradosCache.jogos;
           } else {
@@ -1625,7 +1665,7 @@
             jogosGeradosCache = {
               jogos,
               quantidade: quantidadeJogos,
-              dezenas: chaveQuantidades,
+              dezenas: chaveQuantidadesAtualizada,
             };
           }
 
@@ -1634,7 +1674,7 @@
             .map(
               (jogo, i) => `
             <div class="jogo-card">
-              <div class="jogo-title">🎲 Jogo ${i + 1}${i === 0 ? ' (Top 10 Números)' : ''}</div>
+              <div class="jogo-title">🎲 Jogo ${i + 1} — ${jogo.length} dezenas${i === 0 ? ' (Top 10 Números)' : ''}</div>
               <div class="numeros-jogo">
                 ${jogo.map((num) => `<div class="numero-badge">${num}</div>`).join('')}
               </div>
