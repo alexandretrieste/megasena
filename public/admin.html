@@ -831,6 +831,11 @@
       }
 
       // Verificação de autenticação com JWT
+      function adminAuthorizationHeaders() {
+        const token = localStorage.getItem('admin-token');
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
+      }
+
       async function checkAuthentication() {
         const token = localStorage.getItem('admin-token');
         if (!token) {
@@ -986,7 +991,9 @@
           const tbody = document.getElementById('participantes-tbody');
 
           try {
-            const volantesResponse = await fetch('/api/volantes/list');
+            const volantesResponse = await fetch('/api/volantes/list', {
+              headers: adminAuthorizationHeaders()
+            });
             if (volantesResponse.ok) {
               const volantes = await volantesResponse.json();
               participantesData = volantes;
@@ -1321,7 +1328,9 @@
 
           const top10 = dataStats.topNumbers.map((n) => n.number);
 
-          const responseVolantes = await fetch('/api/volantes/list');
+          const responseVolantes = await fetch('/api/volantes/list', {
+            headers: adminAuthorizationHeaders()
+          });
           if (!responseVolantes.ok) throw new Error('Erro ao carregar volantes');
 
           const volantes = await responseVolantes.json();
@@ -1476,7 +1485,9 @@
           
           // Contar números únicos
           const numerosUnicos = new Set();
-          const responseVolantes = await fetch('/api/volantes/list');
+          const responseVolantes = await fetch('/api/volantes/list', {
+            headers: adminAuthorizationHeaders()
+          });
           if (responseVolantes.ok) {
             const volantes = await responseVolantes.json();
             volantes.forEach((volante) => {
