@@ -131,6 +131,24 @@ Obter estatísticas dos números mais escolhidos
 }
 ```
 
+### GET /api/lottery-results/frequency
+Obter a frequência de cada dezena nos 100 concursos oficiais mais recentes. O resultado é armazenado em cache por sete dias.
+
+As sugestões do painel administrativo usam essas frequências como ponderação e evitam sequências de quatro ou mais dezenas consecutivas por preferência visual. Frequências anteriores não preveem os próximos resultados: cada combinação simples de seis dezenas tem a mesma probabilidade.
+
+**Response:**
+```json
+{
+  "drawCount": 100,
+  "firstContest": 2990,
+  "lastContest": 3089,
+  "frequencies": [
+    {"number": 10, "count": 15},
+    {"number": 53, "count": 14}
+  ]
+}
+```
+
 ## 🛠️ Scripts Disponíveis
 
 ```bash

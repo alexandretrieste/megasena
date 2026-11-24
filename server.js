@@ -6,11 +6,12 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { rateLimit } = require('express-rate-limit');
 const { registerVolante, getStats } = require('./lib/volanteService');
+const { loadRecentDrawFrequencies } = require('./lib/lotteryStatistics');
 const supabase = require('./lib/supabaseClient');
 
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'MegaSenaAdmin/1.0' } }, (res) => {
+    const request = https.get(url, { headers: { 'User-Agent': 'MegaSenaAdmin/1.0' } }, (res) => {
       let body = '';
       res.on('data', (chunk) => (body += chunk));
       res.on('end', () => {
@@ -24,12 +25,51 @@ function fetchJson(url) {
           reject(error);
         }
       });
-    }).on('error', reject);
+    });
+    request.setTimeout(10000, () => request.destroy(new Error('Tempo limite ao consultar resultados oficiais.')));
+    request.on('error', reject);
   });
 }
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HISTORICAL_DRAW_COUNT = 100;
+const HISTORICAL_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+let historicalFrequencyCache = null;
+let historicalFrequencyCacheAt = 0;
+let historicalFrequencyRequest = null;
+
+async function loadHistoricalFrequency() {
+  const latest = await fetchJson('https://api.guidi.dev.br/loteria/megasena/ultimo');
+  if (!Number.isInteger(latest.numero) || latest.numero < HISTORICAL_DRAW_COUNT) {
+    throw new Error('A API de resultados retornou um concurso inválido.');
+  }
+
+  return loadRecentDrawFrequencies(fetchJson, latest, HISTORICAL_DRAW_COUNT);
+}
+
+async function getHistoricalFrequency() {
+  if (
+    historicalFrequencyCache
+    && Date.now() - historicalFrequencyCacheAt < HISTORICAL_CACHE_TTL_MS
+  ) {
+    return historicalFrequencyCache;
+  }
+
+  if (!historicalFrequencyRequest) {
+    historicalFrequencyRequest = loadHistoricalFrequency()
+      .then((stats) => {
+        historicalFrequencyCache = stats;
+        historicalFrequencyCacheAt = Date.now();
+        return stats;
+      })
+      .finally(() => {
+        historicalFrequencyRequest = null;
+      });
+  }
+
+  return historicalFrequencyRequest;
+}
 
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -228,6 +268,17 @@ app.get('/api/lottery-results', async (_req, res) => {
   } catch (error) {
     console.error('Erro ao consultar API externa de loteria:', error);
     res.status(502).json({ error: 'Erro ao consultar resultados oficiais da Mega-Sena.' });
+  }
+});
+
+app.get('/api/lottery-results/frequency', async (_req, res) => {
+  try {
+    const stats = await getHistoricalFrequency();
+    res.set('Cache-Control', 'public, max-age=0, s-maxage=604800');
+    res.json(stats);
+  } catch (error) {
+    console.error('Erro ao calcular frequência histórica da Mega-Sena:', error);
+    res.status(502).json({ error: 'Não foi possível carregar o histórico dos últimos 100 concursos.' });
   }
 });
 

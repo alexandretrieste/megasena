@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="/celebracao.png" />
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/lotterySuggestions.js"></script>
     <style>
       .admin-container {
         max-width: 1200px;
@@ -496,6 +497,9 @@
               </div>
               <div id="quantidades-jogos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; width: 100%; max-width: 560px;"></div>
             </div>
+            <p style="color: #555; max-width: 760px;">
+              Sugestões ponderadas pela frequência dos últimos 100 concursos oficiais. Frequências passadas não preveem resultados futuros; cada combinação simples de 6 dezenas tem a mesma probabilidade. Sequências de 4 ou mais dezenas são evitadas apenas por preferência visual.
+            </p>
             <div class="btn-group">
               <button class="btn btn-success" onclick="gerarJogos()">
                 Gerar Jogos
@@ -517,7 +521,7 @@
               </button>
             </div>
             <div class="stats-grid" id="stats-container"></div>
-            <h3>Top 10 Números Sugeridos</h3>
+            <h3>Top 10 Números Mais Escolhidos pelos Participantes</h3>
             <div class="stats-grid" id="top-numeros"></div>
           </div>
 
@@ -691,6 +695,9 @@
               <!-- Jogos sugeridos -->
               <div>
                 <h3 id="relatorio-jogos-titulo" style="color: #0d3b66;"></h3>
+                <p id="relatorio-jogos-nota" style="color: #555;">
+                  Frequências passadas não preveem resultados futuros; cada combinação simples de 6 dezenas tem a mesma probabilidade.
+                </p>
                 <div id="relatorio-jogos-sugeridos"></div>
               </div>
             </div>
@@ -988,7 +995,6 @@
       let participantesFiltrados = [];
       
       // Armazenar jogos gerados globalmente
-      let jogosGeradosCache = null;
       ajustarJogosPorQuantidade();
 
       function ofuscarCPF(cpf) {
@@ -1343,38 +1349,23 @@
             throw new Error('Defina a quantidade de dezenas para cada jogo.');
           }
 
-          const responseStats = await fetch('/api/stats/top-numbers');
-          const dataStats = await responseStats.json();
-
-          if (!responseStats.ok) throw new Error('Erro ao carregar dados de estatísticas');
-
-          const top10 = dataStats.topNumbers.map((n) => n.number);
-
-          const responseVolantes = await fetch('/api/volantes/list', {
-            headers: adminAuthorizationHeaders()
-          });
-          if (!responseVolantes.ok) throw new Error('Erro ao carregar volantes');
-
-          const volantes = await responseVolantes.json();
-          const todosNumerosSet = new Set();
-          volantes.forEach((volante) => {
-            volante.numbers.forEach((num) => todosNumerosSet.add(num));
-          });
-          const todosNumeros = Array.from(todosNumerosSet).sort((a, b) => a - b);
-
-          const maiorQuantidade = Math.max(...quantidadesPorJogo);
-          if (todosNumeros.length < maiorQuantidade) {
-            throw new Error(`Não há números distintos suficientes no banco para gerar ${maiorQuantidade} dezenas.`);
+          const responseFrequency = await fetch('/api/lottery-results/frequency');
+          const historicalData = await responseFrequency.json();
+          if (!responseFrequency.ok) {
+            throw new Error(historicalData.error || 'Erro ao carregar frequências históricas.');
           }
 
-          const jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, quantidadesPorJogo);
+          const jogos = LotterySuggestions.generateSuggestedGames(
+            historicalData.frequencies,
+            quantidadesPorJogo,
+          );
 
           const resultado = document.getElementById('jogos-resultado');
           resultado.innerHTML = jogos
             .map(
               (jogo, i) => `
             <div class="jogo-card">
-              <div class="jogo-title">🎲 Jogo ${i + 1} — ${jogo.length} dezenas${i === 0 ? ' (Top)' : ''}</div>
+              <div class="jogo-title">🎲 Jogo ${i + 1} — ${jogo.length} dezenas</div>
               <div class="numeros-jogo">
                 ${jogo.map((num) => `<div class="numero-badge">${num}</div>`).join('')}
               </div>
@@ -1393,53 +1384,12 @@
           `;
 
           window.jogosGerados = jogos;
-          window.jogosGeradosCache = {
-            jogos,
-            quantidade: quantidadeJogos,
-            dezenas: quantidadesPorJogo.join(','),
-          };
         } catch (error) {
           console.error('Erro:', error);
           document.getElementById('jogos-resultado').innerHTML = `
             <div class="error">Erro ao gerar jogos: ${error.message}</div>
           `;
         }
-      }
-
-      function gerarCombinacoes(top10, todosNumeros, quantidade, quantidadesPorJogo) {
-        const jogos = [];
-        const quantidades = Array.isArray(quantidadesPorJogo)
-          ? quantidadesPorJogo
-          : [Number(quantidadesPorJogo)];
-        const vistos = new Set();
-
-        for (let i = 0; i < quantidade; i += 1) {
-          const dezenasPorJogo = quantidades[i % quantidades.length];
-          let jogo;
-
-          if (i === 0) {
-            jogo = [...new Set(top10.slice(0, dezenasPorJogo))];
-            if (jogo.length < dezenasPorJogo) {
-              const restantes = todosNumeros.filter((num) => !jogo.includes(num));
-              jogo = [...jogo, ...restantes.slice(0, dezenasPorJogo - jogo.length)];
-            }
-          } else {
-            let attempts = 0;
-            do {
-              const embaralhado = [...todosNumeros].sort(() => Math.random() - 0.5);
-              jogo = embaralhado.slice(0, dezenasPorJogo).sort((a, b) => a - b);
-              attempts += 1;
-            } while (vistos.has(jogo.join(',')) && attempts < 50);
-          }
-
-          jogo = [...new Set(jogo)].sort((a, b) => a - b);
-          if (jogo.length !== dezenasPorJogo || vistos.has(jogo.join(','))) continue;
-
-          vistos.add(jogo.join(','));
-          jogos.push(jogo);
-        }
-
-        return jogos;
       }
 
       // Copiar números para clipboard
@@ -1533,10 +1483,15 @@
               throw new Error('Não foi possível buscar o resultado oficial.');
             }
             const oficial = await responseLoteria.json();
-            const numerosOficiais = oficial.numeros?.join(', ') || oficial.resultado?.join(', ') || 'N/A';
+            const numerosOficiais = oficial.listaDezenas?.join(', ')
+              || oficial.numeros?.join(', ')
+              || oficial.resultado?.join(', ')
+              || 'N/A';
             const concursoOficial = oficial.concurso || oficial.numero || oficial.id || 'Último concurso';
-            const dataSorteio = oficial.data || oficial.data_sorteio || oficial.dia || null;
-            const dataFormatada = dataSorteio ? new Date(dataSorteio).toLocaleDateString('pt-BR') : 'Data não disponível';
+            const dataSorteio = oficial.dataApuracao || oficial.data || oficial.data_sorteio || oficial.dia || null;
+            const dataFormatada = /^\d{2}\/\d{2}\/\d{4}$/.test(dataSorteio || '')
+              ? dataSorteio
+              : (dataSorteio ? new Date(dataSorteio).toLocaleDateString('pt-BR') : 'Data não disponível');
 
             resultadoLoteria.innerHTML = `
               <p style="margin: 0.2rem 0; font-weight: 600;">Concurso: ${concursoOficial}</p>
@@ -1675,39 +1630,24 @@
             }
           });
 
-          let jogos;
-          const todosNumeros = Array.from(numerosUnicos);
-          const top10 = data.topNumbers.slice(0, 10).map((n) => n.number);
-          const maiorQuantidade = quantidadesPorJogo.length
-            ? Math.max(...quantidadesPorJogo)
-            : 10;
-
-          if (todosNumeros.length < maiorQuantidade) {
-            throw new Error(`Não há números distintos suficientes no banco para gerar ${maiorQuantidade} dezenas.`);
+          const responseFrequency = await fetch('/api/lottery-results/frequency');
+          const historicalData = await responseFrequency.json();
+          if (!responseFrequency.ok) {
+            throw new Error(historicalData.error || 'Erro ao carregar frequências históricas.');
           }
-
-          // Se já tivermos jogos na cache com a mesma configuração, reutiliza
-          if (
-            jogosGeradosCache &&
-            jogosGeradosCache.quantidade === quantidadeJogos &&
-            jogosGeradosCache.dezenas === chaveQuantidadesAtualizada
-          ) {
-            jogos = jogosGeradosCache.jogos;
-          } else {
-            jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, quantidadesPorJogo);
-            jogosGeradosCache = {
-              jogos,
-              quantidade: quantidadeJogos,
-              dezenas: chaveQuantidadesAtualizada,
-            };
-          }
+          const jogos = LotterySuggestions.generateSuggestedGames(
+            historicalData.frequencies,
+            quantidadesPorJogo,
+          );
+          document.getElementById('relatorio-jogos-nota').textContent =
+            `Frequências dos concursos ${historicalData.firstContest} a ${historicalData.lastContest} (${historicalData.drawCount} concursos). Frequências passadas não preveem resultados futuros; cada combinação simples de 6 dezenas tem a mesma probabilidade. Sequências de 4 ou mais dezenas são evitadas apenas por preferência visual.`;
 
           const jogosContainer = document.getElementById('relatorio-jogos-sugeridos');
           jogosContainer.innerHTML = jogos
             .map(
               (jogo, i) => `
             <div class="jogo-card">
-              <div class="jogo-title">🎲 Jogo ${i + 1} — ${jogo.length} dezenas${i === 0 ? ' (Top 10 Números)' : ''}</div>
+              <div class="jogo-title">🎲 Jogo ${i + 1} — ${jogo.length} dezenas</div>
               <div class="numeros-jogo">
                 ${jogo.map((num) => `<div class="numero-badge">${num}</div>`).join('')}
               </div>
