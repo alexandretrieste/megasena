@@ -176,13 +176,16 @@
               placeholder="Digite a senha"
               required
               minlength="12"
-              autocomplete="off"
+              autocomplete="current-password"
+              autocapitalize="none"
+              autocorrect="off"
+              inputmode="text"
             />
             <span class="password-hint">Mínimo 12 dígitos</span>
           </div>
 
           <div class="form-group">
-            <button type="submit" id="login-btn">Acessar Painel</button>
+            <button type="button" id="login-btn">Acessar Painel</button>
           </div>
         </form>
       </div>
@@ -273,10 +276,13 @@
 
       // Verificar se já está autenticado
       function checkAuth() {
-        const token = localStorage.getItem('admin-token');
-        if (token) {
-          // Verificar se o token ainda é válido
-          verifyToken(token);
+        try {
+          const token = localStorage.getItem('admin-token');
+          if (token) {
+            verifyToken(token);
+          }
+        } catch (error) {
+          console.error('Armazenamento local indisponível:', error);
         }
       }
 
@@ -298,8 +304,7 @@
 
       checkAuth();
 
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+      async function handleLogin() {
         const password = passwordInput.value;
 
         if (password.length < 12) {
@@ -322,11 +327,16 @@
           const data = await response.json();
 
           if (response.ok && data.success) {
-            // Armazenar JWT token no localStorage
-            localStorage.setItem('admin-token', data.token);
+            try {
+              localStorage.setItem('admin-token', data.token);
+            } catch (storageError) {
+              showError('Não foi possível salvar a sessão neste navegador.');
+              console.error(storageError);
+              return;
+            }
             showSuccess('Acesso concedido! Redirecionando...');
             setTimeout(() => {
-              window.location.href = '/admin.html';
+              window.location.assign('/admin.html');
             }, 1000);
           } else {
             showError(data.error || 'Senha incorreta.');
@@ -338,6 +348,18 @@
         } finally {
           loginBtn.disabled = false;
           loginBtn.textContent = 'Acessar Painel';
+        }
+      }
+
+      loginBtn.addEventListener('click', handleLogin);
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleLogin();
+      });
+      passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleLogin();
         }
       });
 
