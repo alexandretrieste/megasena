@@ -836,6 +836,26 @@
         return token ? { 'Authorization': `Bearer ${token}` } : {};
       }
 
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (resource, options = {}) => {
+        const url = String(resource);
+        const needsAdminToken =
+          url.startsWith('/api/admin/') ||
+          url === '/api/volantes/list';
+
+        if (!needsAdminToken) {
+          return nativeFetch(resource, options);
+        }
+
+        const headers = new Headers(options.headers || {});
+        const token = localStorage.getItem('admin-token');
+        if (token && !headers.has('Authorization')) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+
+        return nativeFetch(resource, { ...options, headers });
+      };
+
       async function checkAuthentication() {
         const token = localStorage.getItem('admin-token');
         if (!token) {
