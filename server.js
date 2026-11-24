@@ -2,8 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const https = require('https');
 const path = require('path');
-const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { rateLimit } = require('express-rate-limit');
 const { registerVolante, getStats } = require('./lib/volanteService');
 const supabase = require('./lib/supabaseClient');
 
@@ -30,14 +31,26 @@ function fetchJson(url) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuração de autenticação
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || 
-  crypto.createHash('sha256').update('123456789012').digest('hex');
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+const JWT_SECRET = process.env.JWT_SECRET;
+const TOKEN_ISSUER = 'megasena-api';
+const TOKEN_AUDIENCE = 'megasena-admin';
 
-// Função para gerar hash SHA-256
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+if (process.env.VERCEL === '1') {
+  app.set('trust proxy', 1);
+}
+
+const passwordHashCost = ADMIN_PASSWORD_HASH.match(/^\$2[aby]\$(\d{2})\$/);
+if (
+  !passwordHashCost
+  || Number(passwordHashCost[1]) < 12
+  || !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(ADMIN_PASSWORD_HASH)
+) {
+  throw new Error('ADMIN_PASSWORD_HASH deve conter um hash bcrypt válido com custo mínimo 12.');
+}
+
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET é obrigatório e deve ter pelo menos 32 caracteres.');
 }
 
 function validateAdminPassword(password) {
@@ -50,32 +63,54 @@ function validateAdminPassword(password) {
 }
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '16kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Muitas tentativas de login. Tente novamente mais tarde.' },
+});
 
 // Middleware de autenticação para rotas admin
 const verifyAdminToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.replace('Bearer ', '');
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
     return res.status(401).json({ error: 'Token não fornecido.' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token inválido ou expirado.' });
-    }
-    req.admin = decoded;
-    next();
-  });
+  jwt.verify(
+    token,
+    JWT_SECRET,
+    {
+      algorithms: ['HS256'],
+      issuer: TOKEN_ISSUER,
+      audience: TOKEN_AUDIENCE,
+    },
+    (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ error: 'Token inválido ou expirado.' });
+      }
+
+      if (!decoded || typeof decoded !== 'object' || decoded.admin !== true) {
+        return res.status(403).json({ error: 'Token sem permissões administrativas.' });
+      }
+
+      req.admin = decoded;
+      next();
+    },
+  );
 };
 
 // Endpoint de login - Verificação de senha
-app.post('/api/admin/verify-password', (req, res) => {
-  const { password } = req.body;
+app.post('/api/admin/verify-password', adminLoginLimiter, async (req, res) => {
+  const password = req.body?.password;
 
-  if (!password) {
+  if (typeof password !== 'string' || !password) {
     return res.status(400).json({ error: 'Senha obrigatória.' });
   }
 
@@ -85,25 +120,28 @@ app.post('/api/admin/verify-password', (req, res) => {
     });
   }
 
-  // Comparar com hash da senha
-  const passwordHash = hashPassword(password);
-  
-  if (passwordHash === ADMIN_PASSWORD_HASH) {
-    // Gerar JWT token com expiração de 24 horas
-    const token = jwt.sign(
-      { admin: true, iat: Math.floor(Date.now() / 1000) },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-    
-    return res.json({
-      success: true,
-      token: token,
-      expiresIn: 86400, // 24 horas em segundos
-    });
-  }
+  try {
+    const passwordMatches = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    if (!passwordMatches) {
+      return res.status(401).json({ success: false, error: 'Senha incorreta.' });
+    }
 
-  return res.status(401).json({ success: false, error: 'Senha incorreta.' });
+    const token = jwt.sign(
+      { admin: true },
+      JWT_SECRET,
+      {
+        algorithm: 'HS256',
+        expiresIn: '24h',
+        issuer: TOKEN_ISSUER,
+        audience: TOKEN_AUDIENCE,
+      },
+    );
+
+    return res.json({ success: true, token, expiresIn: 86400 });
+  } catch (error) {
+    console.error('Erro ao autenticar administrador:', error);
+    return res.status(500).json({ error: 'Erro ao autenticar administrador.' });
+  }
 });
 
 // Rota para logout (opcional - o cliente remove o token)
@@ -118,16 +156,20 @@ app.get('/api/admin/verify-token', verifyAdminToken, (req, res) => {
 
 app.post('/api/volantes', async (req, res) => {
   try {
-    // Verificar se o sistema está aceitando novas entradas
-    const { data: config } = await supabase
+    const { data: config, error } = await supabase
       .from('system_config')
       .select('value')
       .eq('key', 'accept_new_entries')
-      .single();
+      .maybeSingle();
 
-    if (config && !config.value) {
-      return res.status(403).json({ 
-        error: 'O sistema não está aceitando novas sugestões no momento.' 
+    if (error) throw error;
+    if (!config) {
+      return res.status(503).json({ error: 'Configuração do sistema indisponível.' });
+    }
+
+    if (!config.value) {
+      return res.status(403).json({
+        error: 'O sistema não está aceitando novas sugestões no momento.',
       });
     }
 
@@ -152,7 +194,7 @@ app.get('/api/stats/top-numbers', async (_req, res) => {
   }
 });
 
-app.get('/api/volantes/list', async (_req, res) => {
+app.get('/api/volantes/list', verifyAdminToken, async (_req, res) => {
   try {
     const { fetchEntries } = require('./lib/sheet');
     const volantes = await fetchEntries();
@@ -181,18 +223,10 @@ app.get('/api/admin/entry-status', verifyAdminToken, async (_req, res) => {
       .from('system_config')
       .select('value')
       .eq('key', 'accept_new_entries')
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      // Se não existir, criar com valor padrão true
-      const { data: newConfig } = await supabase
-        .from('system_config')
-        .insert({ key: 'accept_new_entries', value: true })
-        .select()
-        .single();
-      
-      return res.json({ acceptingEntries: newConfig?.value ?? true });
-    }
+    if (error) throw error;
+    if (!data) throw new Error('Configuração accept_new_entries não encontrada.');
 
     res.json({ acceptingEntries: data.value });
   } catch (error) {
@@ -204,7 +238,10 @@ app.get('/api/admin/entry-status', verifyAdminToken, async (_req, res) => {
 // Admin: Alternar aceitação de novas entradas
 app.post('/api/admin/toggle-entries', verifyAdminToken, async (req, res) => {
   try {
-    const { accept } = req.body;
+    const { accept } = req.body || {};
+    if (typeof accept !== 'boolean') {
+      return res.status(400).json({ error: 'O campo accept deve ser booleano.' });
+    }
 
     const { data, error } = await supabase
       .from('system_config')
@@ -249,7 +286,7 @@ async function resetSystemConfigDefault() {
 // Admin: Zerar apenas os volantes/participantes
 app.delete('/api/admin/reset-volantes', verifyAdminToken, async (req, res) => {
   try {
-    const { confirmCode } = req.body;
+    const { confirmCode } = req.body || {};
 
     if (!['ZERAR_VOLANTES', 'ZERAR_PARTICIPANTES'].includes(confirmCode)) {
       return res.status(400).json({ 
@@ -272,7 +309,7 @@ app.delete('/api/admin/reset-volantes', verifyAdminToken, async (req, res) => {
 // Admin: Zerar tudo e restaurar configurações básicas
 app.delete('/api/admin/reset-database', verifyAdminToken, async (req, res) => {
   try {
-    const { confirmCode } = req.body;
+    const { confirmCode } = req.body || {};
 
     if (confirmCode !== 'ZERAR_TUDO') {
       return res.status(400).json({ 
@@ -293,7 +330,10 @@ app.delete('/api/admin/reset-database', verifyAdminToken, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}
 
+module.exports = app;

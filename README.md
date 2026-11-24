@@ -15,7 +15,7 @@ Aplicação para registrar e gerenciar volantes de Mega Sena com análise de est
 ## 📋 Pré-requisitos
 
 - Node.js 20+ (para desenvolvimento local)
-- Docker (para rodar localmente com banco de dados incluído)
+- Docker (opcional; o banco é um projeto Supabase)
 - Conta Supabase (https://supabase.com)
 
 ## 🛠️ Instalação Local
@@ -27,10 +27,9 @@ Aplicação para registrar e gerenciar volantes de Mega Sena com análise de est
 git clone https://github.com/alexandretrieste/megasena.git
 cd megasena
 
-# Copie o .env.example
-cp .env.example .env
+# Crie .env com as variáveis documentadas em DOCKER.md
 
-# Inicie os containers
+# Inicie a aplicação em container
 docker-compose up -d
 
 # Acesse http://localhost:3000
@@ -42,12 +41,10 @@ docker-compose up -d
 # Instale as dependências
 npm install
 
-# Configure as variáveis de ambiente
-cp .env.example .env
-# Edite o .env com suas credenciais do Supabase
+# Configure SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+# ADMIN_PASSWORD_HASH e JWT_SECRET no ambiente local.
 
-# Execute as migrations
-npm run migrate
+# Crie as tabelas executando supabase/setup.sql no SQL Editor do Supabase
 
 # Inicie a aplicação
 npm start
@@ -76,7 +73,9 @@ Na aba "Environment Variables", adicione:
 
 ```
 SUPABASE_URL = https://seu-projeto.supabase.co
-SUPABASE_ANON_KEY = sua-chave-anonima-aqui
+SUPABASE_SERVICE_ROLE_KEY = chave-secreta-apenas-no-servidor
+ADMIN_PASSWORD_HASH = hash-bcrypt-gerado-pelo-script
+JWT_SECRET = segredo-aleatorio-com-pelo-menos-32-caracteres
 ```
 
 ### Passo 4: Deploy
@@ -91,7 +90,7 @@ Tabela: `volantes`
 |-------|------|-----------|
 | id | UUID | Chave primária |
 | name | TEXT | Nome do participante |
-| cpf | TEXT | CPF (único por participante) |
+| cpf | TEXT | CPF do participante |
 | numbers | INTEGER[] | Array com os números escolhidos |
 | timestamp | TIMESTAMP | Data/hora do registro |
 | created_at | TIMESTAMP | Data de criação automática |
@@ -135,9 +134,8 @@ Obter estatísticas dos números mais escolhidos
 ## 🛠️ Scripts Disponíveis
 
 ```bash
-npm start           # Inicia a aplicação
-npm run migrate     # Executa migrations do banco
-npm run migrate:down # Reverte migrations
+npm start  # Inicia a aplicação
+npm test   # Executa testes automatizados
 ```
 
 ## 📁 Estrutura do Projeto
@@ -153,13 +151,13 @@ megasena/
 │   ├── supabaseClient.js  # Cliente Supabase
 │   ├── sheet.js           # Operações no banco
 │   ├── volanteService.js  # Lógica de negócio
-│   └── migrations.js      # Migrations do banco
 ├── public/
 │   ├── index.html         # Frontend
 │   ├── app.js             # JavaScript do frontend
 │   └── style.css          # Estilos
 └── supabase/
-    └── seed.sql           # Script de inicialização do banco
+    ├── setup.sql          # Schema, validações e permissões seguras
+    └── seed.sql           # Configuração inicial não pessoal
 ```
 
 ## 🔐 Segurança
@@ -167,15 +165,15 @@ megasena/
 - CPF validado com `cpf-cnpj-validator`
 - Números limitados de 1 a 60
 - Entre 6 e 10 números por volante
-- Prevenção de duplicatas (nome + CPF)
+- Prevenção de duplicatas (nome + CPF, protegida também por índice único)
 - Row Level Security (RLS) no Supabase
-- **Painel administrativo protegido por autenticação JWT com hash SHA-256**
+- **Painel administrativo protegido por autenticação JWT com senha armazenada em bcrypt**
 - Tokens JWT com expiração de 24 horas
-- Autenticação em localStorage com validação de token
+- Listagem de dados pessoais protegida por token administrativo
 
 ### Configurar Senha de Admin
 
-A senha é armazenada como **hash SHA-256** no arquivo `.env` por segurança.
+A senha é armazenada como **hash bcrypt** no arquivo `.env` por segurança.
 
 **Para gerar o hash de uma nova senha:**
 
@@ -187,7 +185,7 @@ node scripts/generate-password-hash.js "sua_senha_aqui_com_12_caracteres"
 ```
 ✅ Hash gerado com sucesso!
 
-ADMIN_PASSWORD_HASH=xxxxxxxxxxxxxxxxxxxxx...
+ADMIN_PASSWORD_HASH=$2b$12$...
 ```
 
 **Adicione ao arquivo `.env`:**
@@ -198,11 +196,25 @@ JWT_SECRET=seu_jwt_secret_muito_seguro_aqui
 ```
 
 **Importante:** 
-- A senha deve ter no mínimo 12 caracteres
+- A senha deve ter no mínimo 12 caracteres e cumprir os requisitos do gerador
 - Use uma senha forte e segura
-- JWT_SECRET deve ser uma string longa e aleatória em produção
+- JWT_SECRET deve ser aleatório e ter pelo menos 32 caracteres
 - Em Vercel, configure JWT_SECRET como variável de ambiente
-- O hash é unidirecional - a senha não pode ser recuperada
+- O hash bcrypt é unidirecional - a senha não pode ser recuperada
+
+### Banco de dados e privacidade
+
+- Execute `supabase/setup.sql` no SQL Editor do Supabase para criar as tabelas.
+- O servidor usa `SUPABASE_SERVICE_ROLE_KEY`; nunca a exponha no navegador, em commits ou em logs.
+- RLS permanece habilitado sem políticas públicas, e o endpoint `/api/volantes/list` exige token administrativo.
+- A chave `anon` não é usada pelo backend.
+
+## 🧪 Testes
+
+```bash
+npm ci
+npm test
+```
 
 ## 📝 Licença
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Script para gerar hash SHA-256 de uma senha
+ * Script para gerar hash bcrypt de uma senha
  * Uso: node scripts/generate-password-hash.js "sua_senha_aqui"
  */
 
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 function validatePassword(password) {
   const lengthValid = password.length >= 12;
@@ -17,7 +17,7 @@ function validatePassword(password) {
 }
 
 function generatePasswordHash(password) {
-  if (!password) {
+  if (typeof password !== 'string' || !password) {
     console.error('❌ Erro: Forneça uma senha como argumento');
     console.log('Uso: node scripts/generate-password-hash.js "sua_senha_aqui"');
     process.exit(1);
@@ -28,7 +28,7 @@ function generatePasswordHash(password) {
     process.exit(1);
   }
 
-  const hash = crypto.createHash('sha256').update(password).digest('hex');
+  const hash = bcrypt.hashSync(password, 12);
   
   console.log('\n✅ Hash gerado com sucesso!\n');
   console.log('ADMIN_PASSWORD_HASH=' + hash);

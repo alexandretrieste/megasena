@@ -490,8 +490,9 @@
             <div class="btn-group" style="flex-wrap: wrap; gap: 0.75rem;">
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; width: 100%; max-width: 560px;">
                 <label style="display: flex; flex-direction: column; gap: 0.25rem;">
-                  Quantas dezenas por jogo?
-                  <input type="number" id="dezenas-por-jogo" min="6" max="10" value="10" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
+                  Quantas dezenas em cada jogo?
+                  <input type="text" id="quantidades-jogos" value="6, 7, 8, 9, 10" placeholder="Ex.: 6, 7, 10" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; width: 100%;" />
+                  <small>Separe quantidades diferentes por vírgula (6 a 20).</small>
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 0.25rem;">
                   Quantos jogos gerar?
@@ -971,6 +972,15 @@
         return `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`;
       }
 
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
       async function carregarParticipantes(forcarRevelar = false) {
         try {
           const response = await fetch('/api/stats/top-numbers');
@@ -1030,10 +1040,10 @@
           .map((v, i) => `
             <tr>
               <td>${i + 1}</td>
-              <td>${v.name || 'N/A'}</td>
-              <td class="cpf-cell">${cpfsRevelados ? (v.cpf || 'N/A') : ofuscarCPF(v.cpf || '00000000000')}</td>
-              <td>${(v.numbers && v.numbers.length > 0) ? v.numbers.join(', ') : 'N/A'}</td>
-              <td>${v.timestamp ? new Date(v.timestamp).toLocaleDateString('pt-BR') : 'N/A'}</td>
+              <td>${escapeHtml(v.name || 'N/A')}</td>
+              <td class="cpf-cell">${escapeHtml(cpfsRevelados ? (v.cpf || 'N/A') : ofuscarCPF(v.cpf || '00000000000'))}</td>
+              <td>${(v.numbers && v.numbers.length > 0) ? v.numbers.map((num) => escapeHtml(num)).join(', ') : 'N/A'}</td>
+              <td>${escapeHtml(v.timestamp ? new Date(v.timestamp).toLocaleDateString('pt-BR') : 'N/A')}</td>
             </tr>
           `)
           .join('');
@@ -1099,10 +1109,10 @@
         // Ordenação
         switch (ordenacao) {
           case 'nome-asc':
-            filtered.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+            filtered.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR'));
             break;
           case 'nome-desc':
-            filtered.sort((a, b) => b.name.localeCompare(a.name, 'pt-BR'));
+            filtered.sort((a, b) => String(b.name || '').localeCompare(String(a.name || ''), 'pt-BR'));
             break;
           case 'data-desc':
             filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -1181,8 +1191,8 @@
 
         // Ordenar por nome alfabeticamente
         const nomesOrdenados = [...participantesData]
-          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
-          .map((v, i) => `${i + 1}. ${v.name}`)
+          .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR'))
+          .map((v, i) => `${i + 1}. ${escapeHtml(v.name || 'N/A')}`)
           .join('\n');
 
         // Criar janela de impressão
@@ -1238,8 +1248,8 @@
             </div>
             <div class="lista">
               ${participantesData
-                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
-                .map((v, i) => `<div>${i + 1}. ${v.name}</div>`)
+                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR'))
+                .map((v, i) => `<div>${i + 1}. ${escapeHtml(v.name || 'N/A')}</div>`)
                 .join('')}
             </div>
           </body>
@@ -1255,11 +1265,20 @@
       // Gerar jogos com número de dezenas e quantidade de jogos configuráveis
       async function gerarJogos() {
         try {
-          const dezenasPorJogo = Number(document.getElementById('dezenas-por-jogo').value);
+          const quantidadesTexto = document.getElementById('quantidades-jogos').value;
+          const quantidadesPorJogo = [...new Set(
+            quantidadesTexto.split(',')
+              .map((valor) => Number(valor.trim()))
+              .filter((valor) => Number.isInteger(valor) && valor >= 6 && valor <= 20)
+          )];
           const quantidadeJogos = Number(document.getElementById('quantidade-jogos').value);
 
-          if (!dezenasPorJogo || dezenasPorJogo < 6 || dezenasPorJogo > 10) {
-            throw new Error('Escolha entre 6 e 10 dezenas por jogo.');
+          if (quantidadesPorJogo.length === 0) {
+            throw new Error('Informe quantidades entre 6 e 20 dezenas, separadas por vírgula.');
+          }
+
+          if (quantidadesPorJogo.length > quantidadeJogos) {
+            throw new Error('A quantidade de jogos deve cobrir todas as quantidades informadas.');
           }
 
           if (!quantidadeJogos || quantidadeJogos < 1 || quantidadeJogos > 20) {
@@ -1283,11 +1302,12 @@
           });
           const todosNumeros = Array.from(todosNumerosSet).sort((a, b) => a - b);
 
-          if (todosNumeros.length < dezenasPorJogo) {
-            throw new Error(`Não há números suficientes no banco para gerar ${dezenasPorJogo} dezenas.`);
+          const maiorQuantidade = Math.max(...quantidadesPorJogo);
+          if (todosNumeros.length < maiorQuantidade) {
+            throw new Error(`Não há números distintos suficientes no banco para gerar ${maiorQuantidade} dezenas.`);
           }
 
-          const jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, dezenasPorJogo);
+          const jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, quantidadesPorJogo);
 
           const resultado = document.getElementById('jogos-resultado');
           resultado.innerHTML = jogos
@@ -1316,7 +1336,7 @@
           window.jogosGeradosCache = {
             jogos,
             quantidade: quantidadeJogos,
-            dezenas: dezenasPorJogo,
+            dezenas: quantidadesPorJogo.join(','),
           };
         } catch (error) {
           console.error('Erro:', error);
@@ -1326,35 +1346,34 @@
         }
       }
 
-      function gerarCombinacoes(top10, todosNumeros, quantidade, dezenasPorJogo) {
+      function gerarCombinacoes(top10, todosNumeros, quantidade, quantidadesPorJogo) {
         const jogos = [];
+        const quantidades = Array.isArray(quantidadesPorJogo)
+          ? quantidadesPorJogo
+          : [Number(quantidadesPorJogo)];
+        const vistos = new Set();
 
-        const baseTop = top10.slice(0, dezenasPorJogo);
-        let primeiroJogo = [...new Set(baseTop)];
-
-        if (primeiroJogo.length < dezenasPorJogo) {
-          const restantes = todosNumeros.filter((num) => !primeiroJogo.includes(num));
-          primeiroJogo = [...primeiroJogo, ...restantes.slice(0, dezenasPorJogo - primeiroJogo.length)];
-        }
-
-        jogos.push([...new Set(primeiroJogo)].sort((a, b) => a - b));
-
-        const vistos = new Set([jogos[0].join(',')]);
-        let attempts = 0;
-
-        for (let i = 1; i < quantidade; i++) {
-          attempts = 0;
+        for (let i = 0; i < quantidade; i += 1) {
+          const dezenasPorJogo = quantidades[i % quantidades.length];
           let jogo;
 
-          do {
-            const embaralhado = [...todosNumeros].sort(() => Math.random() - 0.5);
-            jogo = embaralhado.slice(0, dezenasPorJogo).sort((a, b) => a - b);
-            attempts += 1;
-          } while (vistos.has(jogo.join(',')) && attempts < 50);
-
-          if (vistos.has(jogo.join(','))) {
-            break;
+          if (i === 0) {
+            jogo = [...new Set(top10.slice(0, dezenasPorJogo))];
+            if (jogo.length < dezenasPorJogo) {
+              const restantes = todosNumeros.filter((num) => !jogo.includes(num));
+              jogo = [...jogo, ...restantes.slice(0, dezenasPorJogo - jogo.length)];
+            }
+          } else {
+            let attempts = 0;
+            do {
+              const embaralhado = [...todosNumeros].sort(() => Math.random() - 0.5);
+              jogo = embaralhado.slice(0, dezenasPorJogo).sort((a, b) => a - b);
+              attempts += 1;
+            } while (vistos.has(jogo.join(',')) && attempts < 50);
           }
+
+          jogo = [...new Set(jogo)].sort((a, b) => a - b);
+          if (jogo.length !== dezenasPorJogo || vistos.has(jogo.join(','))) continue;
 
           vistos.add(jogo.join(','));
           jogos.push(jogo);
@@ -1405,7 +1424,11 @@
 
           if (!response.ok) throw new Error('Erro ao carregar dados');
 
-          const dezenasPorJogo = Number(document.getElementById('dezenas-por-jogo').value) || 10;
+          const quantidadesPorJogo = (document.getElementById('quantidades-jogos')?.value || '10')
+            .split(',')
+            .map((valor) => Number(valor.trim()))
+            .filter((valor) => Number.isInteger(valor) && valor >= 6 && valor <= 20);
+          const chaveQuantidades = quantidadesPorJogo.join(',');
           const quantidadeJogos = Number(document.getElementById('quantidade-jogos').value) || 7;
 
           // Data do relatório
@@ -1413,7 +1436,7 @@
             `Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
 
           document.getElementById('relatorio-jogos-titulo').textContent =
-            `🎲 ${quantidadeJogos} Jogos Sugeridos (${dezenasPorJogo} números cada)`;
+            `🎲 ${quantidadeJogos} Jogos Sugeridos (${chaveQuantidades || '10'} números por jogo)`;
 
           // Métricas principais
           document.getElementById('relatorio-total-participantes').textContent = data.totalVolantes;
@@ -1594,15 +1617,15 @@
           if (
             jogosGeradosCache &&
             jogosGeradosCache.quantidade === quantidadeJogos &&
-            jogosGeradosCache.dezenas === dezenasPorJogo
+            jogosGeradosCache.dezenas === chaveQuantidades
           ) {
             jogos = jogosGeradosCache.jogos;
           } else {
-            jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, dezenasPorJogo);
+            jogos = gerarCombinacoes(top10, todosNumeros, quantidadeJogos, quantidadesPorJogo);
             jogosGeradosCache = {
               jogos,
               quantidade: quantidadeJogos,
-              dezenas: dezenasPorJogo,
+              dezenas: chaveQuantidades,
             };
           }
 

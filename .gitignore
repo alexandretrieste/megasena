@@ -3,8 +3,8 @@ data/volantes.csv
 
 # Environment
 .env
-.env.example
-
+.env.*
+!.env.production.example
 
 
 

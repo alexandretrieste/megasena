@@ -1,4 +1,4 @@
-import { cpf as cpfValidator } from 'https://cdn.jsdelivr.net/npm/cpf-cnpj-validator@1.0.3/dist/cpf-cnpj-validator.es.js';
+import { cpf as cpfValidator } from 'https://cdn.jsdelivr.net/npm/cpf-cnpj-validator@2.1.2/dist/index.js';
 
 const form = document.getElementById('volante-form');
 const grid = document.getElementById('numbers-grid');
@@ -230,4 +230,3 @@ renderGrid();
 updateSelectionHint();
 form.addEventListener('submit', submitVolante);
 cpfInput.addEventListener('input', handleCpfInput);
-
