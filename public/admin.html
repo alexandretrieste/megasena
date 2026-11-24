@@ -849,6 +849,13 @@
 
         const headers = new Headers(options.headers || {});
         const token = localStorage.getItem('admin-token');
+        const authorization = headers.get('Authorization');
+        if (
+          authorization &&
+          (/^Bearer\s+(null|undefined)$/i.test(authorization) || authorization.trim() === '')
+        ) {
+          headers.delete('Authorization');
+        }
         if (token && !headers.has('Authorization')) {
           headers.set('Authorization', `Bearer ${token}`);
         }
