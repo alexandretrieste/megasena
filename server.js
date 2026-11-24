@@ -77,7 +77,13 @@ const adminLoginLimiter = rateLimit({
 // Middleware de autenticação para rotas admin
 const verifyAdminToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const cookieToken = req.headers.cookie
+    ?.split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith('admin_session='))
+    ?.slice('admin_session='.length);
+  const token = bearerToken || cookieToken;
 
   if (!token) {
     return res.status(401).json({ error: 'Token não fornecido.' });
@@ -137,6 +143,10 @@ app.post('/api/admin/verify-password', adminLoginLimiter, async (req, res) => {
       },
     );
 
+    res.setHeader(
+      'Set-Cookie',
+      `admin_session=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`,
+    );
     return res.json({ success: true, token, expiresIn: 86400 });
   } catch (error) {
     console.error('Erro ao autenticar administrador:', error);
@@ -146,6 +156,10 @@ app.post('/api/admin/verify-password', adminLoginLimiter, async (req, res) => {
 
 // Rota para logout (opcional - o cliente remove o token)
 app.post('/api/admin/logout', (_req, res) => {
+  res.setHeader(
+    'Set-Cookie',
+    'admin_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0',
+  );
   res.json({ success: true, message: 'Logout realizado.' });
 });
 
